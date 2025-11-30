@@ -1,0 +1,52 @@
+import Phaser from 'phaser';
+import { useGameState } from '../store/gameState';
+
+export class MenuScene extends Phaser.Scene {
+  constructor() {
+    super('MenuScene');
+  }
+  
+  create() {
+    this.add.text(400, 100, 'Choose Your Weaver', {
+      fontSize: '32px',
+      color: '#FF00FF'
+    }).setOrigin(0.5);
+    
+    const skins = [
+      { key: 'rainbow-activist', name: 'Rainbow Activist', bonus: '+10% Essence' },
+      { key: 'crypto-bro', name: 'Crypto Bro', bonus: '5% Auto-Collect' },
+      { key: 'covid-safe', name: 'COVID Safe', bonus: '1 Free Hit' },
+      { key: 'brainrot-chad', name: 'Brainrot Chad', bonus: '+50 Start Essence' },
+      { key: 'void-poet', name: 'Void Poet', bonus: 'See Hidden Shards' }
+    ];
+    
+    skins.forEach((skin, index) => {
+      const y = 200 + index * 80;
+      
+      const button = this.add.text(400, y, skin.name, {
+        fontSize: '24px',
+        color: '#FFFFFF',
+        backgroundColor: '#333333',
+        padding: { x: 20, y: 10 }
+      }).setOrigin(0.5).setInteractive();
+      
+      this.add.text(400, y + 25, skin.bonus, {
+        fontSize: '16px',
+        color: '#FFD700'
+      }).setOrigin(0.5);
+      
+      button.on('pointerdown', () => {
+        useGameState.getState().selectedSkin = skin.key;
+        this.scene.start('CrimsonLayer');
+      });
+      
+      button.on('pointerover', () => {
+        button.setStyle({ backgroundColor: '#555555' });
+      });
+      
+      button.on('pointerout', () => {
+        button.setStyle({ backgroundColor: '#333333' });
+      });
+    });
+  }
+}
