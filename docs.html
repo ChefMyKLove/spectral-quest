@@ -1,0 +1,1221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spectral Quest: Complete Codebase Guide</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+            background: white;
+            margin-top: 20px;
+            margin-bottom: 20px;
+            border-radius: 10px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
+
+        header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px 20px;
+            text-align: center;
+            border-radius: 10px 10px 0 0;
+            margin: -20px -20px 30px -20px;
+        }
+
+        h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .subtitle {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+
+        nav {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+            position: sticky;
+            top: 20px;
+            z-index: 100;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        nav ul {
+            list-style: none;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        nav a {
+            color: #667eea;
+            text-decoration: none;
+            padding: 8px 16px;
+            border-radius: 5px;
+            transition: all 0.3s;
+            font-weight: 500;
+        }
+
+        nav a:hover {
+            background: #667eea;
+            color: white;
+        }
+
+        section {
+            margin-bottom: 50px;
+            padding: 30px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+
+        h2 {
+            color: #667eea;
+            font-size: 2em;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #e0e0e0;
+        }
+
+        h3 {
+            color: #764ba2;
+            font-size: 1.5em;
+            margin-top: 25px;
+            margin-bottom: 15px;
+        }
+
+        h4 {
+            color: #555;
+            font-size: 1.2em;
+            margin-top: 20px;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+
+        .file-card {
+            background: white;
+            padding: 20px;
+            margin: 15px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            border-left: 4px solid #667eea;
+        }
+
+        .file-path {
+            font-family: 'Courier New', monospace;
+            color: #667eea;
+            font-weight: bold;
+            font-size: 1.1em;
+            margin-bottom: 10px;
+        }
+
+        .file-description {
+            color: #666;
+            margin-bottom: 15px;
+        }
+
+        .code-block {
+            background: #2d2d2d;
+            color: #f8f8f2;
+            padding: 20px;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin: 15px 0;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+            line-height: 1.5;
+        }
+
+        .code-block code {
+            color: #f8f8f2;
+        }
+
+        .highlight {
+            background: #fff3cd;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-weight: 500;
+        }
+
+        .warning {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 4px;
+        }
+
+        .info {
+            background: #d1ecf1;
+            border-left: 4px solid #17a2b8;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 4px;
+        }
+
+        .success {
+            background: #d4edda;
+            border-left: 4px solid #28a745;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 4px;
+        }
+
+        .link-box {
+            background: white;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 8px;
+            border: 2px solid #667eea;
+        }
+
+        .link-box a {
+            color: #667eea;
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .link-box a:hover {
+            text-decoration: underline;
+        }
+
+        .tree {
+            font-family: 'Courier New', monospace;
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 15px 0;
+            line-height: 1.8;
+        }
+
+        .tree-item {
+            margin: 5px 0;
+        }
+
+        .tree-folder {
+            color: #667eea;
+            font-weight: bold;
+        }
+
+        .tree-file {
+            color: #28a745;
+        }
+
+        .step {
+            background: white;
+            padding: 20px;
+            margin: 15px 0;
+            border-radius: 8px;
+            border-left: 4px solid #28a745;
+        }
+
+        .step-number {
+            background: #28a745;
+            color: white;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            margin-right: 10px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            background: white;
+        }
+
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        th {
+            background: #667eea;
+            color: white;
+            font-weight: 600;
+        }
+
+        tr:hover {
+            background: #f5f5f5;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.85em;
+            font-weight: 600;
+            margin-left: 10px;
+        }
+
+        .badge-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .badge-success {
+            background: #28a745;
+            color: white;
+        }
+
+        .badge-warning {
+            background: #ffc107;
+            color: #333;
+        }
+
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🌈 Spectral Quest: Rainbow Craft</h1>
+            <p class="subtitle">Complete Codebase Documentation & Development Guide</p>
+        </header>
+
+        <nav>
+            <ul>
+                <li><a href="#overview">Overview</a></li>
+                <li><a href="#architecture">Architecture</a></li>
+                <li><a href="#file-structure">File Structure</a></li>
+                <li><a href="#modify-visuals">Modify Visuals</a></li>
+                <li><a href="#modify-behavior">Modify Behavior</a></li>
+                <li><a href="#game-mechanics">Game Mechanics</a></li>
+                <li><a href="#learning-resources">Learning Resources</a></li>
+                <li><a href="#common-tasks">Common Tasks</a></li>
+            </ul>
+        </nav>
+
+        <!-- OVERVIEW SECTION -->
+        <section id="overview">
+            <h2>📚 Project Overview</h2>
+            
+            <div class="info">
+                <strong>What is Spectral Quest?</strong><br>
+                A precision platformer game built with <strong>Phaser 3</strong>, <strong>TypeScript</strong>, and <strong>Vite</strong>. 
+                You play as Lirien, a unicorn collecting spectral motes across 7 rainbow levels while avoiding the binary wrap.
+            </div>
+
+            <h3>Technology Stack</h3>
+            <table>
+                <tr>
+                    <th>Technology</th>
+                    <th>Purpose</th>
+                    <th>Version</th>
+                </tr>
+                <tr>
+                    <td><strong>Phaser 3</strong></td>
+                    <td>2D game engine - handles rendering, physics, input, scenes</td>
+                    <td>3.80.1</td>
+                </tr>
+                <tr>
+                    <td><strong>TypeScript</strong></td>
+                    <td>Programming language - adds types to JavaScript</td>
+                    <td>5.9.3</td>
+                </tr>
+                <tr>
+                    <td><strong>Vite</strong></td>
+                    <td>Build tool & dev server - fast development experience</td>
+                    <td>7.1.14</td>
+                </tr>
+                <tr>
+                    <td><strong>Zustand</strong></td>
+                    <td>State management - stores game state globally</td>
+                    <td>5.0.8</td>
+                </tr>
+                <tr>
+                    <td><strong>@bsv/sdk</strong></td>
+                    <td>Bitcoin SV SDK - for blockchain/NFT integration</td>
+                    <td>1.9.17</td>
+                </tr>
+            </table>
+
+            <h3>Quick Start Commands</h3>
+            <div class="code-block">
+npm run dev      # Start development server (http://localhost:5173)
+npm run build    # Build for production
+npm run preview  # Preview production build
+            </div>
+        </section>
+
+        <!-- ARCHITECTURE SECTION -->
+        <section id="architecture">
+            <h2>🏗️ Game Architecture</h2>
+
+            <h3>How Phaser 3 Works</h3>
+            <p>Phaser uses a <strong>Scene-based</strong> architecture. Think of scenes as different "screens" or "states" in your game:</p>
+            
+            <div class="file-card">
+                <div class="file-path">Scene Flow</div>
+                <div class="file-description">
+                    <strong>BootScene</strong> → <strong>MainMenu</strong> → <strong>Level (Crimson/Amber/etc.)</strong> → <strong>LevelComplete</strong> → <strong>Next Level</strong> or <strong>GameOver</strong>
+                </div>
+            </div>
+
+            <h3>Core Concepts</h3>
+            <ul style="margin-left: 30px; line-height: 2;">
+                <li><strong>Scenes</strong>: Different screens (menu, gameplay, game over)</li>
+                <li><strong>Game Objects</strong>: Visual elements (sprites, text, graphics)</li>
+                <li><strong>Physics Bodies</strong>: Collision detection and movement</li>
+                <li><strong>Groups</strong>: Collections of similar objects (enemies, particles)</li>
+                <li><strong>State Management</strong>: Zustand store tracks game state globally</li>
+            </ul>
+
+            <h3>Data Flow</h3>
+            <div class="code-block">
+User Input → Lirien Entity → Game Store (Zustand) → BaseLevel Scene → Visual Updates
+            </div>
+        </section>
+
+        <!-- FILE STRUCTURE SECTION -->
+        <section id="file-structure">
+            <h2>📁 Complete File Structure</h2>
+
+            <div class="tree">
+                <div class="tree-item"><span class="tree-folder">spectral-quest/</span></div>
+                <div class="tree-item">├── <span class="tree-folder">src/</span> <span class="badge badge-primary">Main source code</span></div>
+                <div class="tree-item">│   ├── <span class="tree-file">main.ts</span> <span class="badge badge-success">Entry point</span></div>
+                <div class="tree-item">│   ├── <span class="tree-folder">config/</span></div>
+                <div class="tree-item">│   │   └── <span class="tree-file">gameConfig.ts</span> <span class="badge badge-warning">Game constants</span></div>
+                <div class="tree-item">│   ├── <span class="tree-folder">scenes/</span></div>
+                <div class="tree-item">│   │   ├── <span class="tree-file">BootScene.ts</span></div>
+                <div class="tree-item">│   │   ├── <span class="tree-file">MainMenu.ts</span></div>
+                <div class="tree-item">│   │   ├── <span class="tree-file">BaseLevel.ts</span> <span class="badge badge-warning">Core gameplay</span></div>
+                <div class="tree-item">│   │   ├── <span class="tree-file">LevelComplete.ts</span></div>
+                <div class="tree-item">│   │   ├── <span class="tree-file">GameOver.ts</span></div>
+                <div class="tree-item">│   │   └── <span class="tree-folder">levels/</span></div>
+                <div class="tree-item">│   │       ├── <span class="tree-file">CrimsonLevel.ts</span></div>
+                <div class="tree-item">│   │       ├── <span class="tree-file">AmberLevel.ts</span></div>
+                <div class="tree-item">│   │       └── <span class="tree-file">... (5 more levels)</span></div>
+                <div class="tree-item">│   ├── <span class="tree-folder">entities/</span></div>
+                <div class="tree-item">│   │   ├── <span class="tree-file">Lirien.ts</span> <span class="badge badge-success">Player</span></div>
+                <div class="tree-item">│   │   ├── <span class="tree-file">Drone.ts</span></div>
+                <div class="tree-item">│   │   └── <span class="tree-file">Mentor.ts</span></div>
+                <div class="tree-item">│   ├── <span class="tree-folder">store/</span></div>
+                <div class="tree-item">│   │   └── <span class="tree-file">gameStore.ts</span> <span class="badge badge-warning">State management</span></div>
+                <div class="tree-item">│   └── <span class="tree-folder">utils/</span></div>
+                <div class="tree-item">├── <span class="tree-folder">public/</span> <span class="badge badge-primary">Static assets</span></div>
+                <div class="tree-item">│   └── <span class="tree-folder">images/</span></div>
+                <div class="tree-item">├── <span class="tree-file">index.html</span></div>
+                <div class="tree-item">├── <span class="tree-file">package.json</span></div>
+                <div class="tree-item">└── <span class="tree-file">vite.config.ts</span></div>
+            </div>
+
+            <h3>Key Files Explained</h3>
+
+            <div class="file-card">
+                <div class="file-path">📄 src/main.ts</div>
+                <div class="file-description">
+                    <strong>Entry Point</strong> - This is where your game starts. It creates the Phaser game instance and registers all scenes.
+                    <br><br>
+                    <strong>What it does:</strong>
+                    <ul style="margin-left: 20px; margin-top: 10px;">
+                        <li>Imports all scene classes</li>
+                        <li>Configures Phaser game settings (width, height, physics)</li>
+                        <li>Registers scenes in order: BootScene → MainMenu → Levels → etc.</li>
+                        <li>Starts the BootScene automatically</li>
+                    </ul>
+                    <br>
+                    <strong>To modify:</strong> Add new scenes here, change game dimensions, enable/disable physics debug
+                </div>
+            </div>
+
+            <div class="file-card">
+                <div class="file-path">⚙️ src/config/gameConfig.ts</div>
+                <div class="file-description">
+                    <strong>Game Configuration</strong> - ALL game constants live here. This is your "control panel" for the entire game.
+                    <br><br>
+                    <strong>Contains:</strong>
+                    <ul style="margin-left: 20px; margin-top: 10px;">
+                        <li><strong>LEVELS array</strong>: Configuration for all 7 levels (mote count, time, colors, mentors)</li>
+                        <li><strong>GAME constants</strong>: Energy values, speeds, sizes, physics settings</li>
+                        <li><strong>DIFFICULTIES</strong>: Dreamer, Weaver, Dancer, Master settings</li>
+                        <li><strong>RARITY system</strong>: Card rarity definitions and colors</li>
+                    </ul>
+                    <br>
+                    <strong>To modify:</strong> Change any game value here - energy, speeds, level parameters, etc.
+                </div>
+            </div>
+
+            <div class="file-card">
+                <div class="file-path">🎮 src/scenes/BaseLevel.ts</div>
+                <div class="file-description">
+                    <strong>Core Gameplay Scene</strong> - The foundation for all 7 levels. Contains ALL the gameplay logic.
+                    <br><br>
+                    <strong>What it handles:</strong>
+                    <ul style="margin-left: 20px; margin-top: 10px;">
+                        <li>Player (Lirien) creation and updates</li>
+                        <li>Mote spawning and collection</li>
+                        <li>Energy particle spawning</li>
+                        <li>Drone spawning and behavior</li>
+                        <li>Mentor appearances</li>
+                        <li>Binary wrap rendering and growth</li>
+                        <li>HUD (Heads-Up Display) - timer, energy, lives</li>
+                        <li>Collision detection</li>
+                        <li>Level completion logic</li>
+                    </ul>
+                    <br>
+                    <strong>To modify:</strong> Change how gameplay works, add new features, modify visuals
+                </div>
+            </div>
+
+            <div class="file-card">
+                <div class="file-path">🦄 src/entities/Lirien.ts</div>
+                <div class="file-description">
+                    <strong>Player Character</strong> - Lirien, the playable unicorn. Handles all player movement, energy, and shooting.
+                    <br><br>
+                    <strong>Key methods:</strong>
+                    <ul style="margin-left: 20px; margin-top: 10px;">
+                        <li><strong>update()</strong>: Called every frame - handles movement, energy drain, shooting</li>
+                        <li><strong>handleMovement()</strong>: WASD/Arrow key movement, energy consumption</li>
+                        <li><strong>handleShooting()</strong>: Space bar shooting with mouse aim</li>
+                        <li><strong>handleTumbling()</strong>: What happens when energy runs out</li>
+                        <li><strong>collectEnergy()</strong>: Called when player touches energy particles</li>
+                    </ul>
+                    <br>
+                    <strong>To modify:</strong> Change player speed, energy drain rates, movement feel, shooting mechanics
+                </div>
+            </div>
+
+            <div class="file-card">
+                <div class="file-path">💾 src/store/gameStore.ts</div>
+                <div class="file-description">
+                    <strong>Global State Management</strong> - Zustand store that tracks ALL game state across all scenes.
+                    <br><br>
+                    <strong>Stores:</strong>
+                    <ul style="margin-left: 20px; margin-top: 10px;">
+                        <li>Current level, lives, energy, time remaining</li>
+                        <li>Motes collected, sequence tracking</li>
+                        <li>Shots fired, hits, drones destroyed</li>
+                        <li>Path data, explored areas</li>
+                        <li>Card generation data</li>
+                    </ul>
+                    <br>
+                    <strong>Key actions:</strong>
+                    <ul style="margin-left: 20px; margin-top: 10px;">
+                        <li><strong>startLevel()</strong>: Initialize a new level</li>
+                        <li><strong>addEnergy()</strong> / <strong>drainEnergy()</strong>: Energy management</li>
+                        <li><strong>collectMote()</strong>: Track mote collection</li>
+                        <li><strong>generateCardData()</strong>: Create card metadata</li>
+                    </ul>
+                    <br>
+                    <strong>To modify:</strong> Add new state variables, change how stats are tracked, modify card generation
+                </div>
+            </div>
+
+            <div class="file-card">
+                <div class="file-path">🎨 src/scenes/MainMenu.ts</div>
+                <div class="file-description">
+                    <strong>Main Menu Screen</strong> - The first screen players see. Difficulty selection and start button.
+                    <br><br>
+                    <strong>Features:</strong>
+                    <ul style="margin-left: 20px; margin-top: 10px;">
+                        <li>Cycling background images (13 images fade in/out)</li>
+                        <li>Floating rainbow bubbles</li>
+                        <li>Difficulty selection buttons (Dreamer, Weaver, Dancer, Master)</li>
+                        <li>Test mode (press T) - jump to any level</li>
+                        <li>Glassmorphism UI effects</li>
+                    </ul>
+                    <br>
+                    <strong>To modify:</strong> Change menu appearance, add new buttons, modify difficulty options
+                </div>
+            </div>
+
+            <div class="file-card">
+                <div class="file-path">🎯 src/scenes/levels/CrimsonLevel.ts (and others)</div>
+                <div class="file-description">
+                    <strong>Individual Level Scenes</strong> - Each level extends BaseLevel. Level 1 (Crimson) has a tutorial overlay.
+                    <br><br>
+                    <strong>Structure:</strong>
+                    <ul style="margin-left: 20px; margin-top: 10px;">
+                        <li>All levels call <code>super.create()</code> to use BaseLevel logic</li>
+                        <li>CrimsonLevel adds a tutorial modal before gameplay starts</li>
+                        <li>Other levels (Amber, Yellow, etc.) are simple - just extend BaseLevel</li>
+                    </ul>
+                    <br>
+                    <strong>To modify:</strong> Add level-specific features, change tutorial text, add level-specific mechanics
+                </div>
+            </div>
+
+            <div class="file-card">
+                <div class="file-path">🤖 src/entities/Drone.ts</div>
+                <div class="file-description">
+                    <strong>Drone Entities</strong> - Two types: Harvester (collects energy) and Hostile (attacks player).
+                    <br><br>
+                    <strong>Harvester Drones:</strong>
+                    <ul style="margin-left: 20px; margin-top: 10px;">
+                        <li>Launch from bottom (Maxim's location)</li>
+                        <li>Collect energy particles (max 15)</li>
+                        <li>Return to bottom when full</li>
+                        <li>Drop energy if shot or collide with player</li>
+                    </ul>
+                    <br>
+                    <strong>Hostile Drones:</strong>
+                    <ul style="margin-left: 20px; margin-top: 10px;">
+                        <li>Only attack if player has more than 1 mote</li>
+                        <li>Chase player and try to make them drop motes</li>
+                        <li>Can be shot down</li>
+                    </ul>
+                    <br>
+                    <strong>To modify:</strong> Change drone behavior, speeds, spawn rates, AI logic
+                </div>
+            </div>
+        </section>
+
+        <!-- MODIFY VISUALS SECTION -->
+        <section id="modify-visuals">
+            <h2>🎨 How to Modify Visuals</h2>
+
+            <h3>1. Change Player (Lirien) Appearance</h3>
+            <div class="step">
+                <span class="step-number">1</span>
+                <strong>Location:</strong> <code>src/entities/Lirien.ts</code>
+                <br><br>
+                <strong>What to modify:</strong>
+                <ul style="margin-left: 20px; margin-top: 10px;">
+                    <li><strong>Size:</strong> Look for <code>setScale()</code> or <code>setSize()</code></li>
+                    <li><strong>Color/Tint:</strong> Look for <code>setTint()</code> - changes sprite color</li>
+                    <li><strong>Trail Effect:</strong> Find <code>spawnCarpetTrail()</code> method - modify rainbow trail</li>
+                    <li><strong>Rotation:</strong> <code>setRotation()</code> - how Lirien rotates when tumbling</li>
+                </ul>
+            </div>
+
+            <h3>2. Change Energy Particle Appearance</h3>
+            <div class="step">
+                <span class="step-number">2</span>
+                <strong>Location:</strong> <code>src/scenes/BaseLevel.ts</code> → <code>spawnEnergyParticleStaggered()</code>
+                <br><br>
+                <div class="code-block">
+// Find this code (around line 527):
+const size = Phaser.Math.Between(6, 10);  // Change size range
+const particle = this.add.circle(x, y, size, particleColor, 0.7);  // Change alpha (0.7 = 70% visible)
+const glow = this.add.circle(x, y, size + 6, particleColor, 0.3);  // Change glow size and alpha
+                </div>
+                <br>
+                <strong>To change:</strong>
+                <ul style="margin-left: 20px; margin-top: 10px;">
+                    <li><strong>Size:</strong> Change <code>Phaser.Math.Between(6, 10)</code> to different numbers</li>
+                    <li><strong>Brightness:</strong> Change <code>0.7</code> (alpha) - higher = more visible</li>
+                    <li><strong>Glow:</strong> Change <code>size + 6</code> for glow size, <code>0.3</code> for glow brightness</li>
+                </ul>
+            </div>
+
+            <h3>3. Change Mote Appearance</h3>
+            <div class="step">
+                <span class="step-number">3</span>
+                <strong>Location:</strong> <code>src/scenes/BaseLevel.ts</code> → <code>createMoteSprite()</code>
+                <br><br>
+                <div class="code-block">
+// Find this code (around line 409):
+const outerGlow = this.add.circle(0, 0, 60, baseColor.color, 0.6);  // Outer glow size and brightness
+const middleGlow = this.add.circle(0, 0, 40, 0xffffff, 0.5);  // Middle ring
+const core = this.add.circle(0, 0, 30, baseColor.color, 1);  // Main body
+const center = this.add.circle(0, 0, 18, 0xffffff, 1);  // Center dot
+                </div>
+                <br>
+                <strong>To change:</strong>
+                <ul style="margin-left: 20px; margin-top: 10px;">
+                    <li><strong>Size:</strong> Change the numbers (60, 40, 30, 18) - larger = bigger mote</li>
+                    <li><strong>Colors:</strong> Change <code>baseColor.color</code> or <code>0xffffff</code> (white)</li>
+                    <li><strong>Brightness:</strong> Change the last number (0.6, 0.5, 1.0) - 1.0 = fully opaque</li>
+                </ul>
+            </div>
+
+            <h3>4. Change Background Colors</h3>
+            <div class="step">
+                <span class="step-number">4</span>
+                <strong>Location:</strong> <code>src/scenes/BaseLevel.ts</code> → <code>createBackground()</code>
+                <br><br>
+                <div class="code-block">
+// Each level has its own color defined in gameConfig.ts:
+// Crimson: #DC143C, Amber: #FF8C00, Yellow: #FFD700, etc.
+// The background uses this color to create a gradient
+                </div>
+                <br>
+                <strong>To change level colors:</strong> Edit <code>src/config/gameConfig.ts</code> → <code>LEVELS</code> array → <code>color</code> property
+            </div>
+
+            <h3>5. Change UI (HUD) Appearance</h3>
+            <div class="step">
+                <span class="step-number">5</span>
+                <strong>Location:</strong> <code>src/scenes/BaseLevel.ts</code> → <code>createHUD()</code> and <code>updateHUD()</code>
+                <br><br>
+                <strong>What you can change:</strong>
+                <ul style="margin-left: 20px; margin-top: 10px;">
+                    <li><strong>Text size:</strong> <code>fontSize: '20px'</code> → change number</li>
+                    <li><strong>Text color:</strong> <code>color: '#ffffff'</code> → change hex color</li>
+                    <li><strong>Position:</strong> Change X and Y coordinates</li>
+                    <li><strong>Energy bar:</strong> Find <code>energyBar</code> - modify width, height, colors</li>
+                </ul>
+            </div>
+
+            <h3>6. Change Menu Appearance</h3>
+            <div class="step">
+                <span class="step-number">6</span>
+                <strong>Location:</strong> <code>src/scenes/MainMenu.ts</code>
+                <br><br>
+                <strong>What you can change:</strong>
+                <ul style="margin-left: 20px; margin-top: 10px;">
+                    <li><strong>Title text:</strong> Find <code>'SPECTRAL QUEST'</code> → change text and styling</li>
+                    <li><strong>Buttons:</strong> Find <code>createRoundedButton()</code> → modify colors, sizes, shapes</li>
+                    <li><strong>Bubbles:</strong> Find <code>createBubbles()</code> → change count, sizes, colors</li>
+                    <li><strong>Background images:</strong> Modify <code>backgroundImageKeys</code> array</li>
+                </ul>
+            </div>
+        </section>
+
+        <!-- MODIFY BEHAVIOR SECTION -->
+        <section id="modify-behavior">
+            <h2>⚙️ How to Modify Behavior</h2>
+
+            <h3>1. Change Energy System</h3>
+            <div class="step">
+                <span class="step-number">1</span>
+                <strong>Location:</strong> <code>src/config/gameConfig.ts</code>
+                <br><br>
+                <div class="code-block">
+// Find the GAME object (around line 148):
+STARTING_ENERGY: 150,           // How much energy player starts with
+MAX_ENERGY: 150,                // Maximum energy capacity
+ENERGY_DRAIN_FLYING: 1.0,       // Energy lost per second while flying
+ENERGY_DRAIN_GLIDING: 0.2,      // Energy lost per second while gliding
+ENERGY_DRAIN_SHOOTING: 10,      // Energy cost per shot
+ENERGY_FROM_PARTICLE: 30,       // Energy gained from collecting a particle
+                </div>
+                <br>
+                <strong>To modify:</strong> Change any of these numbers. Higher = more, Lower = less
+            </div>
+
+            <h3>2. Change Player Movement Speed</h3>
+            <div class="step">
+                <span class="step-number">2</span>
+                <strong>Location:</strong> <code>src/config/gameConfig.ts</code> → <code>PLAYER_SPEED</code>
+                <br><br>
+                <div class="code-block">
+PLAYER_SPEED: 250,  // Pixels per second - higher = faster
+                </div>
+                <br>
+                <strong>Also check:</strong> <code>src/entities/Lirien.ts</code> → <code>handleMovement()</code> for movement feel
+            </div>
+
+            <h3>3. Change Level Parameters</h3>
+            <div class="step">
+                <span class="step-number">3</span>
+                <strong>Location:</strong> <code>src/config/gameConfig.ts</code> → <code>LEVELS</code> array
+                <br><br>
+                <div class="code-block">
+{
+  key: 'crimson',
+  name: 'Crimson Aether',
+  color: '#DC143C',
+  moteCount: 7,              // How many motes to collect
+  baseTime: 120,             // Time limit in seconds
+  motesToUnlockShooting: 1,  // How many motes before shooting unlocks
+  mentorName: 'Umber',
+  mentorAppearances: 4       // How many times mentor appears
+}
+                </div>
+                <br>
+                <strong>To modify:</strong> Change any value for any level
+            </div>
+
+            <h3>4. Change Drone Behavior</h3>
+            <div class="step">
+                <span class="step-number">4</span>
+                <strong>Location:</strong> <code>src/entities/Drone.ts</code>
+                <br><br>
+                <strong>Harvester Drones:</strong>
+                <ul style="margin-left: 20px; margin-top: 10px;">
+                    <li><strong>Speed:</strong> <code>DRONE_HARVESTER_SPEED</code> in gameConfig.ts</li>
+                    <li><strong>Max Energy:</strong> Find <code>this.maxEnergy = 15</code> in HarvesterDrone constructor</li>
+                    <li><strong>Spawn Rate:</strong> <code>src/scenes/BaseLevel.ts</code> → <code>spawnDrones()</code></li>
+                </ul>
+                <br>
+                <strong>Hostile Drones:</strong>
+                <ul style="margin-left: 20px; margin-top: 10px;">
+                    <li><strong>Attack Condition:</strong> Find <code>if (store.motesCollected > 1)</code> in HostileDrone.update()</li>
+                    <li><strong>Speed:</strong> <code>DRONE_HOSTILE_SPEED</code> in gameConfig.ts</li>
+                    <li><strong>Aggro Range:</strong> Find <code>aggroRange: number = 300</code></li>
+                </ul>
+            </div>
+
+            <h3>5. Change Binary Wrap Growth</h3>
+            <div class="step">
+                <span class="step-number">5</span>
+                <strong>Location:</strong> <code>src/config/gameConfig.ts</code> and <code>src/scenes/BaseLevel.ts</code>
+                <br><br>
+                <div class="code-block">
+// In gameConfig.ts:
+WRAP_BASE_GROWTH_PERCENT: 0.7,   // 70% of wrap from time passing
+WRAP_DRONE_GROWTH_PERCENT: 0.3,  // 30% of wrap from drones delivering energy
+
+// In BaseLevel.ts → updateBinaryWrap():
+// The wrap grows based on time remaining and drone deliveries
+                </div>
+                <br>
+                <strong>To modify:</strong> Change the percentages, or modify the growth calculation in <code>updateBinaryWrap()</code>
+            </div>
+
+            <h3>6. Change Shooting Mechanics</h3>
+            <div class="step">
+                <span class="step-number">6</span>
+                <strong>Location:</strong> <code>src/entities/Lirien.ts</code> → <code>handleShooting()</code>
+                <br><br>
+                <div class="code-block">
+// Find these constants in gameConfig.ts:
+SHOT_SPEED: 400,        // How fast projectiles travel
+SHOT_COOLDOWN: 250,     // Milliseconds between shots
+
+// In Lirien.ts:
+if (store.energy < GAME.ENERGY_DRAIN_SHOOTING) return;  // Can't shoot without energy
+                </div>
+                <br>
+                <strong>To modify:</strong> Change speeds, cooldown, or add new shooting mechanics
+            </div>
+        </section>
+
+        <!-- GAME MECHANICS SECTION -->
+        <section id="game-mechanics">
+            <h2>🎮 Game Mechanics Deep Dive</h2>
+
+            <h3>Energy System Flow</h3>
+            <div class="info">
+                <strong>How Energy Works:</strong>
+                <ol style="margin-left: 20px; margin-top: 10px;">
+                    <li>Player starts with <code>STARTING_ENERGY</code> (150)</li>
+                    <li>Holding movement keys drains <code>ENERGY_DRAIN_FLYING</code> per second (1.0)</li>
+                    <li>Collecting energy particles adds <code>ENERGY_FROM_PARTICLE</code> (30)</li>
+                    <li>When energy reaches 0, player enters "tumbling" state</li>
+                    <li>While tumbling, player falls and can collect particles to recover</li>
+                    <li>Recovery happens when energy reaches <code>FALL_RECOVERY_THRESHOLD</code> (10)</li>
+                </ol>
+            </div>
+
+            <h3>Mote Collection System</h3>
+            <div class="info">
+                <strong>How Motes Work:</strong>
+                <ol style="margin-left: 20px; margin-top: 10px;">
+                    <li>Each level has a <code>moteCount</code> (7 for Crimson, 12 for Amber, etc.)</li>
+                    <li>Motes are numbered 1, 2, 3... in random positions</li>
+                    <li>Collecting in sequence order gives bonus (tracked in store)</li>
+                    <li>If wrap reaches a mote, it teleports to a new location</li>
+                    <li>Press 'Q' to eject the last collected mote (restore sequence)</li>
+                    <li>Level completes when all motes are collected</li>
+                </ol>
+            </div>
+
+            <h3>Drone System</h3>
+            <div class="info">
+                <strong>Two Types of Drones:</strong>
+                <br><br>
+                <strong>Harvester Drones:</strong>
+                <ul style="margin-left: 20px; margin-top: 10px;">
+                    <li>Spawn from bottom (Maxim's location)</li>
+                    <li>Randomly move around collecting energy particles</li>
+                    <li>Max 15 energy per trip</li>
+                    <li>Return to bottom when full → delivers energy to Maxim</li>
+                    <li>Energy delivery makes binary wrap grow</li>
+                    <li>If shot or collide with player → drops all collected energy</li>
+                </ul>
+                <br>
+                <strong>Hostile Drones:</strong>
+                <ul style="margin-left: 20px; margin-top: 10px;">
+                    <li>Only attack if player has MORE than 1 mote</li>
+                    <li>Chase player and try to make them drop motes</li>
+                    <li>Can be shot down</li>
+                    <li>More spawn in later levels</li>
+                </ul>
+            </div>
+
+            <h3>Binary Wrap System</h3>
+            <div class="info">
+                <strong>How the Wrap Works:</strong>
+                <ol style="margin-left: 20px; margin-top: 10px;">
+                    <li>Starts at bottom of arena (height = 0%)</li>
+                    <li>Grows based on:
+                        <ul style="margin-left: 20px;">
+                            <li><strong>Time:</strong> 70% of growth from time passing</li>
+                            <li><strong>Drones:</strong> 30% of growth from harvester drones delivering energy</li>
+                        </ul>
+                    </li>
+                    <li>If player touches wrap → lose a life</li>
+                    <li>If wrap reaches a mote → mote teleports</li>
+                    <li>Visual: Dark rectangle that grows from bottom</li>
+                </ol>
+            </div>
+
+            <h3>Mentor System</h3>
+            <div class="info">
+                <strong>How Mentors Work:</strong>
+                <ol style="margin-left: 20px; margin-top: 10px;">
+                    <li>Each level has a mentor (Umber, Calen, Sol, etc.)</li>
+                    <li>Mentor appears <code>mentorAppearances</code> times per level</li>
+                    <li>Visible for 10 seconds, flashes in last 2 seconds</li>
+                    <li>Touching mentor gives:
+                        <ul style="margin-left: 20px;">
+                            <li>+5 seconds to timer</li>
+                            <li>+1 token (ORDINAL•RAINBOWS)</li>
+                        </ul>
+                    </li>
+                    <li>3 consecutive levels with mentor touch = +1 life (max 4 lives)</li>
+                </ol>
+            </div>
+        </section>
+
+        <!-- LEARNING RESOURCES SECTION -->
+        <section id="learning-resources">
+            <h2>📖 Learning Resources</h2>
+
+            <h3>Phaser 3 Documentation</h3>
+            <div class="link-box">
+                <strong>Official Phaser 3 Docs:</strong>
+                <a href="https://photonstorm.github.io/phaser3-docs/" target="_blank">https://photonstorm.github.io/phaser3-docs/</a>
+                <br><br>
+                <strong>Phaser 3 Examples:</strong>
+                <a href="https://labs.phaser.io/" target="_blank">https://labs.phaser.io/</a>
+                <br><br>
+                <strong>Phaser 3 Tutorials:</strong>
+                <a href="https://phaser.io/learn" target="_blank">https://phaser.io/learn</a>
+            </div>
+
+            <h3>TypeScript Learning</h3>
+            <div class="link-box">
+                <strong>TypeScript Handbook:</strong>
+                <a href="https://www.typescriptlang.org/docs/handbook/intro.html" target="_blank">https://www.typescriptlang.org/docs/handbook/intro.html</a>
+                <br><br>
+                <strong>TypeScript in 5 Minutes:</strong>
+                <a href="https://www.typescriptlang.org/docs/handbook/typescript-in-5-minutes.html" target="_blank">Quick Start Guide</a>
+                <br><br>
+                <strong>TypeScript Playground:</strong>
+                <a href="https://www.typescriptlang.org/play" target="_blank">Try TypeScript Online</a>
+            </div>
+
+            <h3>Vite Documentation</h3>
+            <div class="link-box">
+                <strong>Vite Guide:</strong>
+                <a href="https://vitejs.dev/guide/" target="_blank">https://vitejs.dev/guide/</a>
+                <br><br>
+                <strong>Vite Config Reference:</strong>
+                <a href="https://vitejs.dev/config/" target="_blank">Configuration Options</a>
+            </div>
+
+            <h3>Zustand State Management</h3>
+            <div class="link-box">
+                <strong>Zustand Docs:</strong>
+                <a href="https://docs.pmnd.rs/zustand/getting-started/introduction" target="_blank">https://docs.pmnd.rs/zustand/</a>
+                <br><br>
+                <strong>Vanilla Zustand (what we use):</strong>
+                <a href="https://docs.pmnd.rs/zustand/guides/vanilla-store" target="_blank">Vanilla Store Guide</a>
+            </div>
+
+            <h3>Game Development Concepts</h3>
+            <div class="link-box">
+                <strong>Game Loop Concept:</strong>
+                <a href="https://gameprogrammingpatterns.com/game-loop.html" target="_blank">Game Programming Patterns - Game Loop</a>
+                <br><br>
+                <strong>Entity Component System:</strong>
+                <a href="https://en.wikipedia.org/wiki/Entity_component_system" target="_blank">ECS Pattern Explained</a>
+                <br><br>
+                <strong>State Management in Games:</strong>
+                <a href="https://gameprogrammingpatterns.com/state.html" target="_blank">State Pattern</a>
+            </div>
+        </section>
+
+        <!-- COMMON TASKS SECTION -->
+        <section id="common-tasks">
+            <h2>🔧 Common Development Tasks</h2>
+
+            <h3>Task 1: Add a New Level</h3>
+            <div class="step">
+                <span class="step-number">1</span>
+                <strong>Step 1:</strong> Add level config to <code>src/config/gameConfig.ts</code>
+                <div class="code-block">
+// In the LEVELS array, add:
+{
+  key: 'newlevel',
+  name: 'New Level Name',
+  color: '#HEXCOLOR',
+  moteCount: 20,
+  baseTime: 150,
+  motesToUnlockShooting: 3,
+  mentorName: 'MentorName',
+  mentorAppearances: 3
+}
+                </div>
+            </div>
+            <div class="step">
+                <span class="step-number">2</span>
+                <strong>Step 2:</strong> Create level file <code>src/scenes/levels/NewLevel.ts</code>
+                <div class="code-block">
+import { BaseLevel } from '../BaseLevel';
+
+export class NewLevel extends BaseLevel {
+  constructor() {
+    super('NewLevel', 7);  // Level index (0-6 for existing, 7 for new)
+  }
+  
+  create(): void {
+    super.create();
+  }
+}
+                </div>
+            </div>
+            <div class="step">
+                <span class="step-number">3</span>
+                <strong>Step 3:</strong> Register in <code>src/main.ts</code>
+                <div class="code-block">
+import { NewLevel } from './scenes/levels/NewLevel';
+
+// Add to scene array:
+scene: [
+  BootScene,
+  MainMenu,
+  // ... existing levels
+  NewLevel,
+  LevelComplete,
+  GameOver
+]
+                </div>
+            </div>
+
+            <h3>Task 2: Change Player Speed</h3>
+            <div class="step">
+                <span class="step-number">1</span>
+                <strong>Location:</strong> <code>src/config/gameConfig.ts</code>
+                <div class="code-block">
+// Find:
+PLAYER_SPEED: 250,  // Change this number
+// Higher = faster, Lower = slower
+                </div>
+            </div>
+
+            <h3>Task 3: Add a New Power-Up</h3>
+            <div class="step">
+                <span class="step-number">1</span>
+                <strong>Step 1:</strong> Create entity file <code>src/entities/PowerUp.ts</code>
+                <div class="code-block">
+import Phaser from 'phaser';
+
+export class PowerUp extends Phaser.Physics.Arcade.Sprite {
+  constructor(scene: Phaser.Scene, x: number, y: number) {
+    super(scene, x, y, 'powerup');  // 'powerup' is texture key
+    scene.add.existing(this);
+    scene.physics.add.existing(this);
+  }
+  
+  update(): void {
+    // Add behavior here
+  }
+}
+                </div>
+            </div>
+            <div class="step">
+                <span class="step-number">2</span>
+                <strong>Step 2:</strong> Spawn in <code>src/scenes/BaseLevel.ts</code>
+                <div class="code-block">
+// In create() method:
+this.powerUps = this.add.group();
+
+// Spawn power-up:
+const powerUp = new PowerUp(this, x, y);
+this.powerUps.add(powerUp);
+
+// Add collision:
+this.physics.add.overlap(
+  this.player,
+  this.powerUps,
+  this.onPowerUpCollision,
+  undefined,
+  this
+);
+                </div>
+            </div>
+
+            <h3>Task 4: Modify Card Generation</h3>
+            <div class="step">
+                <span class="step-number">1</span>
+                <strong>Location:</strong> <code>src/store/gameStore.ts</code> → <code>generateCardData()</code>
+                <br><br>
+                <strong>What it does:</strong> Calculates card rarity and attributes based on gameplay stats
+                <br><br>
+                <strong>To modify:</strong> Change the rarity calculation logic, add new attributes, modify badge conditions
+            </div>
+
+            <h3>Task 5: Add Sound Effects</h3>
+            <div class="step">
+                <span class="step-number">1</span>
+                <strong>Step 1:</strong> Load sounds in <code>src/scenes/BootScene.ts</code>
+                <div class="code-block">
+// In preload() method:
+this.load.audio('collectMote', 'path/to/sound.mp3');
+this.load.audio('shoot', 'path/to/sound.mp3');
+                </div>
+            </div>
+            <div class="step">
+                <span class="step-number">2</span>
+                <strong>Step 2:</strong> Play sounds in appropriate places
+                <div class="code-block">
+// Example in BaseLevel.ts → onMoteCollision():
+this.sound.play('collectMote');
+                </div>
+            </div>
+
+            <h3>Task 6: Change Difficulty Settings</h3>
+            <div class="step">
+                <span class="step-number">1</span>
+                <strong>Location:</strong> <code>src/config/gameConfig.ts</code> → <code>DIFFICULTIES</code>
+                <div class="code-block">
+dreamer: {
+  timeMultiplier: 1.5,           // More time
+  droneSpeedMultiplier: 0.7,     // Slower drones
+  energyDrainMultiplier: 0.7     // Less energy drain
+}
+                </div>
+                <br>
+                <strong>To modify:</strong> Change multipliers for any difficulty level
+            </div>
+        </section>
+
+        <!-- QUICK REFERENCE SECTION -->
+        <section>
+            <h2>⚡ Quick Reference</h2>
+
+            <h3>File Locations Cheat Sheet</h3>
+            <table>
+                <tr>
+                    <th>What You Want to Change</th>
+                    <th>File Location</th>
+                </tr>
+                <tr>
+                    <td>Energy values, speeds, sizes</td>
+                    <td><code>src/config/gameConfig.ts</code></td>
+                </tr>
+                <tr>
+                    <td>Player movement, shooting</td>
+                    <td><code>src/entities/Lirien.ts</code></td>
+                </tr>
+                <tr>
+                    <td>Gameplay mechanics, collisions</td>
+                    <td><code>src/scenes/BaseLevel.ts</code></td>
+                </tr>
+                <tr>
+                    <td>Menu appearance</td>
+                    <td><code>src/scenes/MainMenu.ts</code></td>
+                </tr>
+                <tr>
+                    <td>Level complete screen</td>
+                    <td><code>src/scenes/LevelComplete.ts</code></td>
+                </tr>
+                <tr>
+                    <td>Game state, stats tracking</td>
+                    <td><code>src/store/gameStore.ts</code></td>
+                </tr>
+                <tr>
+                    <td>Drone behavior</td>
+                    <td><code>src/entities/Drone.ts</code></td>
+                </tr>
+                <tr>
+                    <td>Mentor behavior</td>
+                    <td><code>src/entities/Mentor.ts</code></td>
+                </tr>
+                <tr>
+                    <td>Add new scenes</td>
+                    <td><code>src/main.ts</code></td>
+                </tr>
+            </table>
+
+            <h3>Common Phaser 3 Methods</h3>
+            <table>
+                <tr>
+                    <th>Method</th>
+                    <th>Purpose</th>
+                </tr>
+                <tr>
+                    <td><code>this.add.circle(x, y, radius, color, alpha)</code></td>
+                    <td>Create a circle</td>
+                </tr>
+                <tr>
+                    <td><code>this.add.text(x, y, text, style)</code></td>
+                    <td>Create text</td>
+                </tr>
+                <tr>
+                    <td><code>this.add.image(x, y, key)</code></td>
+                    <td>Create image from loaded texture</td>
+                </tr>
+                <tr>
+                    <td><code>this.physics.add.existing(object)</code></td>
+                    <td>Add physics body to object</td>
+                </tr>
+                <tr>
+                    <td><code>this.physics.add.overlap(obj1, obj2, callback)</code></td>
+                    <td>Detect collisions</td>
+                </tr>
+                <tr>
+                    <td><code>this.tweens.add({targets, properties})</code></td>
+                    <td>Animate objects</td>
+                </tr>
+                <tr>
+                    <td><code>this.time.delayedCall(delay, callback)</code></td>
+                    <td>Run code after delay</td>
+                </tr>
+                <tr>
+                    <td><code>this.scene.start('SceneName')</code></td>
+                    <td>Switch to different scene</td>
+                </tr>
+            </table>
+        </section>
+
+        <footer style="text-align: center; padding: 40px 20px; color: #666; border-top: 2px solid #e0e0e0; margin-top: 50px;">
+            <p><strong>Spectral Quest: Rainbow Craft</strong> - Complete Development Guide</p>
+            <p>Last Updated: <span id="date"></span></p>
+        </footer>
+    </div>
+
+    <script>
+        document.getElementById('date').textContent = new Date().toLocaleDateString();
+        
+        // Smooth scrolling for anchor links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
+            });
+        });
+    </script>
+</body>
+</html>
+
+

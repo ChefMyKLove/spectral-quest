@@ -58,6 +58,15 @@ export class BaseLevel extends Phaser.Scene {
   
   init(): void {
     this.levelConfig = LEVELS[this.levelIndex];
+    
+    // Verify level config is correct
+    if (!this.levelConfig) {
+      console.error(`❌ No level config found for index ${this.levelIndex}!`);
+      return;
+    }
+    
+    console.log(`[BaseLevel] Level ${this.levelIndex} initialized: ${this.levelConfig.name}`);
+    console.log(`[BaseLevel] Expected motes: ${this.levelConfig.moteCount}`);
   }
   
   create(): void {
@@ -329,7 +338,8 @@ export class BaseLevel extends Phaser.Scene {
     const store = useGameStore.getState();
     
     console.log('=== SPAWNING MOTES ===');
-    console.log(`Level config mote count: ${this.levelConfig.moteCount}`);
+    console.log(`Level: ${this.levelConfig.name} (index ${this.levelIndex})`);
+    console.log(`Expected mote count from config: ${this.levelConfig.moteCount}`);
     
     // Initialize motes in store
     store.initializeMotes(this.levelConfig.moteCount);
@@ -338,9 +348,12 @@ export class BaseLevel extends Phaser.Scene {
     const updatedState = useGameStore.getState();
     const motes = updatedState.motes;
     
-    console.log(`Motes array length: ${motes.length}`);
-    console.log(`Player start Y: ${GAME.ARENA_HEIGHT - 100}`);
-    console.log(`Viewport: ${GAME.VIEWPORT_HEIGHT}`);
+    console.log(`Motes array length after initialization: ${motes.length}`);
+    console.log(`Expected: ${this.levelConfig.moteCount}, Actual: ${motes.length}`);
+    
+    if (motes.length !== this.levelConfig.moteCount) {
+      console.error(`❌ MOTE COUNT MISMATCH! Expected ${this.levelConfig.moteCount}, got ${motes.length}`);
+    }
     
     if (motes.length === 0) {
       console.error('❌ NO MOTES IN STORE! Check initializeMotes function.');
@@ -348,6 +361,7 @@ export class BaseLevel extends Phaser.Scene {
     }
     
     // Spawn all motes SCATTERED throughout the ENTIRE arena
+    let spawnedCount = 0;
     motes.forEach((mote, index) => {
       // Random positions across entire arena, but keep them HIGH (away from wrap)
       // Spawn between Y = 200 (top area) and Y = 1800 (well above wrap start)
@@ -357,16 +371,29 @@ export class BaseLevel extends Phaser.Scene {
       mote.x = x;
       mote.y = y;
       
-      console.log(`Mote ${index} (seq ${mote.sequenceNumber}) at (${x}, ${y})`);
+      console.log(`Spawning mote ${index + 1}/${motes.length} (seq ${mote.sequenceNumber}) at (${x}, ${y})`);
       
       const moteSprite = this.createMoteSprite(mote, x, y);
-      this.moteSprites?.add(moteSprite);
-      
-      // Store reference to mote data on sprite
-      (moteSprite as any).moteData = mote;
+      if (moteSprite) {
+        this.moteSprites?.add(moteSprite);
+        spawnedCount++;
+        
+        // Store reference to mote data on sprite
+        (moteSprite as any).moteData = mote;
+      } else {
+        console.error(`❌ Failed to create sprite for mote ${index}`);
+      }
     });
     
-    console.log(`=== ${motes.length} MOTES SPAWNED ===`);
+    console.log(`=== SPAWNING COMPLETE ===`);
+    console.log(`Expected: ${this.levelConfig.moteCount} motes`);
+    console.log(`Initialized: ${motes.length} motes`);
+    console.log(`Spawned: ${spawnedCount} mote sprites`);
+    console.log(`Mote sprites group size: ${this.moteSprites?.getLength() || 0}`);
+    
+    if (spawnedCount !== this.levelConfig.moteCount) {
+      console.error(`❌ SPAWN COUNT MISMATCH! Expected ${this.levelConfig.moteCount}, spawned ${spawnedCount}`);
+    }
   }
   
   protected checkMoteWrapCollision(): void {
