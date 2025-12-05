@@ -8,11 +8,15 @@ import Phaser from 'phaser';
 import { useGameStore } from '../store/gameStore';
 import { GAME, DIFFICULTIES, LEVELS } from '../config/gameConfig';
 import type { Difficulty } from '../config/gameConfig';
+import { initializeWallet, getWallet, resetWallet } from '../systems/bsv/walletAdapter';
+import { BSV_CONFIG } from '../systems/bsv/config';
 
 export class MainMenu extends Phaser.Scene {
   private selectedDifficulty: Difficulty = 'weaver';
   private difficultyButtons: Map<Difficulty, Phaser.GameObjects.Container> = new Map();
   private bubbles: Phaser.GameObjects.Arc[] = [];
+  private walletStatusText?: Phaser.GameObjects.Text;
+  private walletConnected: boolean = false;
   
   constructor() {
     super('MainMenu');
@@ -37,8 +41,11 @@ export class MainMenu extends Phaser.Scene {
     'bg_6912'
   ];
   
-  create(): void {
+  async create(): Promise<void> {
     const centerX = GAME.ARENA_WIDTH / 2;
+    
+    // Initialize BSV wallet (non-blocking, can fail gracefully)
+    this.initializeBSVWallet();
     
     // Create cycling background with actual images
     this.createCyclingBackground();
@@ -114,9 +121,15 @@ export class MainMenu extends Phaser.Scene {
     
     // Wallet button - rounded pill
     const walletButton = this.createPillButton(centerX, 540, '🔗 Connect Wallet', 0x3366aa);
-    walletButton.on('pointerdown', () => {
-      console.log('Wallet connection not yet implemented');
+    walletButton.on('pointerdown', async () => {
+      await this.handleWalletConnection();
     });
+    
+    // Wallet status text (updates dynamically)
+    this.walletStatusText = this.add.text(centerX, 580, '🔗 Wallet: Not Connected', {
+      fontSize: '12px',
+      color: '#ff8888'
+    }).setOrigin(0.5);
     
     // Version
     this.add.text(GAME.ARENA_WIDTH - 15, GAME.VIEWPORT_HEIGHT - 15, 'v0.1.0', {
@@ -616,5 +629,140 @@ export class MainMenu extends Phaser.Scene {
     this.cameras.main.once('camerafadeoutcomplete', () => {
       this.scene.start('CrimsonLevel');
     });
+  }
+
+  /**
+   * INITIALIZE BSV WALLET
+   * 
+   * Attempts to connect to wallet on scene load
+   * Fails gracefully if wallet not available
+   */
+  private async initializeBSVWallet(): Promise<void> {
+    try {
+      console.log('[MainMenu] Initializing BSV wallet...');
+      
+      const wallet = await initializeWallet({
+        network: BSV_CONFIG.NETWORK,
+        appName: BSV_CONFIG.APP_NAME,
+        appIcon: BSV_CONFIG.APP_ICON
+      });
+
+      this.walletConnected = true;
+      const identityKey = wallet.getIdentityKey();
+      
+      console.log(`[MainMenu] ✅ Wallet connected!`);
+      console.log(`[MainMenu] Identity: ${identityKey.slice(0, 16)}...`);
+      
+      // Update UI
+      if (this.walletStatusText) {
+        this.walletStatusText.setText(`🔗 Wallet: Connected (${identityKey.slice(0, 8)}...)`);
+        this.walletStatusText.setColor('#88ff88');
+      }
+    } catch (error) {
+      console.warn('[MainMenu] ⚠️ Wallet initialization failed:', error);
+      console.log('[MainMenu] Game will continue without blockchain features');
+      
+      // Update UI to show disconnected state
+      if (this.walletStatusText) {
+        this.walletStatusText.setText('🔗 Wallet: Not Connected (Click to connect)');
+        this.walletStatusText.setColor('#ff8888');
+      }
+      
+      this.walletConnected = false;
+    }
+  }
+
+  /**
+   * HANDLE WALLET CONNECTION
+   * 
+   * Called when user clicks "Connect Wallet" button
+   * Attempts to connect/reconnect wallet
+   */
+  private async handleWalletConnection(): Promise<void> {
+    try {
+      if (this.walletConnected) {
+        // Already connected - show info or disconnect
+        const wallet = getWallet();
+        const identityKey = wallet.getIdentityKey();
+        
+        // Show connection info (could be a modal in future)
+        console.log(`[MainMenu] Wallet already connected: ${identityKey.slice(0, 16)}...`);
+        
+        // For now, just update text
+        if (this.walletStatusText) {
+          this.walletStatusText.setText(`🔗 Wallet: Connected (${identityKey.slice(0, 8)}...)`);
+          this.walletStatusText.setColor('#88ff88');
+        }
+        return;
+      }
+
+      // Not connected - try to connect
+      console.log('[MainMenu] Attempting wallet connection...');
+      
+      if (this.walletStatusText) {
+        this.walletStatusText.setText('🔗 Connecting...');
+        this.walletStatusText.setColor('#ffaa00');
+      }
+
+      // Reset any existing connection
+      resetWallet();
+      
+      // Initialize new connection
+      const wallet = await initializeWallet({
+        network: BSV_CONFIG.NETWORK,
+        appName: BSV_CONFIG.APP_NAME,
+        appIcon: BSV_CONFIG.APP_ICON
+      });
+
+      this.walletConnected = true;
+      const identityKey = wallet.getIdentityKey();
+      
+      console.log(`[MainMenu] ✅ Wallet connected!`);
+      
+      // Update UI
+      if (this.walletStatusText) {
+        this.walletStatusText.setText(`🔗 Wallet: Connected (${identityKey.slice(0, 8)}...)`);
+        this.walletStatusText.setColor('#88ff88');
+      }
+
+      // Show success notification
+      const successText = this.add.text(GAME.ARENA_WIDTH / 2, 520, '✅ Wallet Connected!', {
+        fontSize: '14px',
+        color: '#88ff88'
+      }).setOrigin(0.5);
+      
+      this.tweens.add({
+        targets: successText,
+        alpha: 0,
+        y: successText.y - 20,
+        duration: 2000,
+        onComplete: () => successText.destroy()
+      });
+
+    } catch (error) {
+      console.error('[MainMenu] ❌ Wallet connection failed:', error);
+      
+      // Update UI to show error
+      if (this.walletStatusText) {
+        this.walletStatusText.setText('🔗 Wallet: Connection Failed (Click to retry)');
+        this.walletStatusText.setColor('#ff4444');
+      }
+
+      // Show error notification
+      const errorText = this.add.text(GAME.ARENA_WIDTH / 2, 520, '❌ Wallet Connection Failed', {
+        fontSize: '14px',
+        color: '#ff4444'
+      }).setOrigin(0.5);
+      
+      this.tweens.add({
+        targets: errorText,
+        alpha: 0,
+        y: errorText.y - 20,
+        duration: 2000,
+        onComplete: () => errorText.destroy()
+      });
+
+      this.walletConnected = false;
+    }
   }
 }
