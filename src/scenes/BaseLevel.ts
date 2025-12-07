@@ -168,11 +168,15 @@ export class BaseLevel extends Phaser.Scene {
   }
   
   protected createBackground(): void {
-    // NO image cycling during gameplay - just solid color background
+    // NOTE: Full-screen animated background is now handled by CSS in index.html
+    // This fills the entire browser window including black bars
+    
+    // Create level color gradient background
+    // This fills only the arena area, so CSS animated background shows on sides
     const color = Phaser.Display.Color.ValueToColor(this.levelConfig.color);
     const graphics = this.add.graphics();
     
-    // Level color gradient background
+    // Level color gradient background - fills the entire arena
     for (let y = 0; y < GAME.ARENA_HEIGHT; y += 10) {
       const factor = 0.4 + (1 - y / GAME.ARENA_HEIGHT) * 0.3;  // Visible color gradient
       const alpha = 0.6 + (1 - y / GAME.ARENA_HEIGHT) * 0.2;   // Stronger overlay
@@ -186,8 +190,67 @@ export class BaseLevel extends Phaser.Scene {
       graphics.fillRect(0, y, GAME.ARENA_WIDTH, 10);
     }
     
-    graphics.setDepth(-100); // Background layer
+    graphics.setDepth(-99); // Above CSS background, below game elements
     this.backgroundGradient = graphics;
+  }
+  
+  // NOTE: Full-screen animated background is now handled by CSS in index.html
+  // This allows the background to fill the entire browser window including black bars
+  // which Phaser cannot draw outside the canvas bounds in Scale.FIT mode
+  
+  /**
+   * Set border image to cover the specified dimensions
+   */
+  private setBorderImageToCover(image: Phaser.GameObjects.Image, targetWidth: number, targetHeight: number): void {
+    const texture = image.texture;
+    const sourceWidth = texture.source[0].width;
+    const sourceHeight = texture.source[0].height;
+    
+    // Calculate scale to cover the area
+    const scaleX = targetWidth / sourceWidth;
+    const scaleY = targetHeight / sourceHeight;
+    const scale = Math.max(scaleX, scaleY); // Use larger scale to ensure full coverage
+    
+    image.setScale(scale);
+    image.setDisplaySize(sourceWidth * scale, sourceHeight * scale);
+  }
+  
+  /**
+   * Cycle border image with cross-fade (like MainMenu)
+   */
+  private cycleBorderImage(border: { current: Phaser.GameObjects.Image; next: Phaser.GameObjects.Image }, newTextureKey: string, width: number, height: number): void {
+    if (!this.textures.exists(newTextureKey)) return;
+    
+    // Update next image texture
+    border.next.setTexture(newTextureKey);
+    this.setBorderImageToCover(border.next, width, height);
+    
+    // Bring next to front
+    border.next.setDepth(border.current.depth);
+    border.next.setAlpha(0);
+    
+    // Cross-fade (4 second fade, matching main background)
+    this.tweens.add({
+      targets: border.current,
+      alpha: 0,
+      duration: 4000,
+      ease: 'Sine.easeInOut'
+    });
+    
+    this.tweens.add({
+      targets: border.next,
+      alpha: 0.8,
+      duration: 4000,
+      ease: 'Sine.easeInOut',
+      onComplete: () => {
+        // Swap: current becomes next, next becomes current
+        const temp = border.current;
+        border.current = border.next;
+        border.next = temp;
+        // Put the new "next" behind
+        border.next.setDepth(border.current.depth - 1);
+      }
+    });
   }
   
   protected createGroups(): void {
@@ -912,7 +975,7 @@ export class BaseLevel extends Phaser.Scene {
       loop: true
     });
     
-    // Spawn hostile drones (aggressive, chase player)
+    // Spawn initial hostile drones (aggressive, chase player)
     const hostileCount = 1 + Math.floor(this.levelIndex / 2);  // More in later levels
     
     for (let i = 0; i < hostileCount; i++) {
@@ -923,6 +986,33 @@ export class BaseLevel extends Phaser.Scene {
       hostile.setTarget(this.player);
       this.hostileDrones?.add(hostile);
     }
+    
+    // Continuous hostile drone respawning
+    this.time.addEvent({
+      delay: 12000,  // Respawn hostile drone every 12 seconds
+      callback: () => {
+        const store = useGameStore.getState();
+        if (store.phase !== 'playing') return;  // Don't spawn if game paused/over
+        
+        // Check current hostile drone count
+        const currentCount = this.hostileDrones?.getLength() || 0;
+        const targetCount = hostileCount;
+        
+        if (currentCount < targetCount) {
+          // Spawn a new hostile drone
+          const x = Phaser.Math.Between(100, GAME.ARENA_WIDTH - 100);
+          const y = Phaser.Math.Between(300, GAME.ARENA_HEIGHT / 2);
+          
+          const hostile = new HostileDrone(this, x, y);
+          hostile.setTarget(this.player);
+          this.hostileDrones?.add(hostile);
+          
+          console.log(`[BaseLevel] Respawned hostile drone (${currentCount + 1}/${targetCount})`);
+        }
+      },
+      callbackScope: this,
+      loop: true
+    });
   }
   
   protected spawnHarvesterFromBottom(delay: number = 0): void {
@@ -1227,8 +1317,11 @@ export class BaseLevel extends Phaser.Scene {
     // Listen for player shooting
     this.events.on('playerShoot', this.onPlayerShoot, this);
     
-    // Listen for mote ejection
+    // Listen for mote ejection (Q key)
     this.events.on('moteEjected', this.onMoteEjected, this);
+    
+    // Listen for motes dropped by drones
+    this.events.on('droneDroppedMotes', this.onDroneDroppedMotes, this);
     
     // Listen for player crash
     this.events.on('playerCrash', this.onPlayerCrash, this);
@@ -1261,34 +1354,277 @@ export class BaseLevel extends Phaser.Scene {
   }
   
   protected onMoteEjected(data: { moteId: number; x: number; y: number }): void {
-    // Find the mote sprite and respawn it
-    this.moteSprites?.children.each((moteSprite: any) => {
-      if (moteSprite.moteId === data.moteId) {
-        // Reset mote in store
-        const store = useGameStore.getState();
-        const mote = store.motes.find(m => m.id === data.moteId);
-        if (mote) {
-          mote.collected = false;
-          mote.collectedAt = 0;
-          
-          // Move mote sprite to ejection location
-          moteSprite.setPosition(data.x, data.y);
-          moteSprite.setVisible(true);
-          moteSprite.setActive(true);
-          
-          // Visual effect - mote reappears
-          moteSprite.setAlpha(0);
-          this.tweens.add({
-            targets: moteSprite,
-            alpha: 1,
-            scaleX: 1.2,
-            scaleY: 1.2,
-            duration: 300,
-            yoyo: true
-          });
-        }
+    const store = useGameStore.getState();
+    const mote = store.motes.find(m => m.id === data.moteId);
+    
+    if (!mote) {
+      console.error(`[BaseLevel] onMoteEjected: Mote ${data.moteId} not found in store`);
+      return;
+    }
+    
+    // Verify mote was actually dropped (not collected)
+    if (mote.collected) {
+      console.warn(`[BaseLevel] onMoteEjected: Mote ${data.moteId} is still marked as collected. This shouldn't happen.`);
+      // Force reset it anyway
+      mote.collected = false;
+      mote.collectedAt = 0;
+    }
+    
+    // Update mote position in store
+    mote.x = data.x;
+    mote.y = data.y;
+    
+    console.log(`[BaseLevel] Ejecting mote ${data.moteId} (seq ${mote.sequenceNumber}) at (${data.x}, ${data.y})`);
+    
+    // Check if sprite exists (it might have been destroyed when collected)
+    let moteSprite: any = null;
+    this.moteSprites?.children.each((sprite: any) => {
+      if (sprite.moteId === data.moteId) {
+        moteSprite = sprite;
+        return false; // Stop iteration
       }
     });
+    
+    if (!moteSprite) {
+      // Sprite was destroyed when collected - recreate it
+      console.log(`[BaseLevel] Recreating sprite for ejected mote ${data.moteId}`);
+      moteSprite = this.createMoteSprite(mote, data.x, data.y);
+      if (moteSprite) {
+        this.moteSprites?.add(moteSprite);
+        (moteSprite as any).moteData = mote;
+      } else {
+        console.error(`[BaseLevel] Failed to recreate sprite for ejected mote ${data.moteId}`);
+        return;
+      }
+    } else {
+      // Sprite exists - just move and show it
+      moteSprite.setPosition(data.x, data.y);
+      moteSprite.setVisible(true);
+      moteSprite.setActive(true);
+    }
+    
+    // Visual effect - mote reappears with sparkle
+    moteSprite.setAlpha(0);
+    moteSprite.setScale(0.5);
+    
+    this.tweens.add({
+      targets: moteSprite,
+      alpha: 1,
+      scaleX: 1,
+      scaleY: 1,
+      duration: 400,
+      ease: 'Back.easeOut'
+    });
+    
+    // Sparkle effect
+    for (let i = 0; i < 5; i++) {
+      const sparkleAngle = (i / 5) * Math.PI * 2;
+      const sparkle = this.add.circle(
+        data.x + Math.cos(sparkleAngle) * 20,
+        data.y + Math.sin(sparkleAngle) * 20,
+        3,
+        0xffffff,
+        1
+      );
+      sparkle.setDepth(1000);
+      this.tweens.add({
+        targets: sparkle,
+        alpha: 0,
+        scaleX: 0.3,
+        scaleY: 0.3,
+        duration: 500,
+        onComplete: () => sparkle.destroy()
+      });
+    }
+    
+    console.log(`[BaseLevel] ✅ Mote ${data.moteId} ejected and respawned at (${data.x}, ${data.y})`);
+    
+    // Validate state after ejection
+    this.validateMoteState();
+  }
+
+  /**
+   * Handle motes dropped by drones (when drone is destroyed or steals motes)
+   */
+  protected onDroneDroppedMotes(data: { x: number; y: number; count: number; moteIds?: number[] }): void {
+    const store = useGameStore.getState();
+    
+    // Get motes that were just dropped using the specific IDs
+    let droppedMotes: typeof store.motes = [];
+    
+    if (data.moteIds && data.moteIds.length > 0) {
+      // Use specific mote IDs if provided
+      droppedMotes = store.motes.filter(m => data.moteIds!.includes(m.id) && !m.collected);
+    } else {
+      // Fallback: find uncollected motes (shouldn't happen if IDs are provided)
+      droppedMotes = store.motes.filter(m => !m.collected);
+    }
+    
+    if (droppedMotes.length === 0) {
+      console.warn('[BaseLevel] No dropped motes to respawn');
+      return;
+    }
+    
+    // Respawn the dropped motes (up to count)
+    const motesToRespawn = droppedMotes.slice(0, data.count);
+    
+    console.log(`[BaseLevel] Attempting to respawn ${motesToRespawn.length} motes at (${data.x}, ${data.y})`);
+    
+    let respawnedCount = 0;
+    
+    motesToRespawn.forEach((mote, index) => {
+      // Calculate spawn position (scatter around drop location)
+      const angle = (index / motesToRespawn.length) * Math.PI * 2;
+      const distance = 30 + (index * 10);
+      const spawnX = data.x + Math.cos(angle) * distance;
+      const spawnY = data.y + Math.sin(angle) * distance;
+      
+      // Clamp to arena bounds
+      const clampedX = Phaser.Math.Clamp(spawnX, 50, GAME.ARENA_WIDTH - 50);
+      const clampedY = Phaser.Math.Clamp(spawnY, 100, GAME.ARENA_HEIGHT - 200);
+      
+      // Update mote position in store
+      mote.x = clampedX;
+      mote.y = clampedY;
+      
+      // Check if sprite exists (it might have been destroyed when collected)
+      let moteSprite: any = null;
+      this.moteSprites?.children.each((sprite: any) => {
+        if (sprite.moteId === mote.id) {
+          moteSprite = sprite;
+          return false; // Stop iteration
+        }
+      });
+      
+      if (!moteSprite) {
+        // Sprite was destroyed when collected - recreate it
+        console.log(`[BaseLevel] Recreating sprite for mote ${mote.id}`);
+        moteSprite = this.createMoteSprite(mote, clampedX, clampedY);
+        if (moteSprite) {
+          this.moteSprites?.add(moteSprite);
+          (moteSprite as any).moteData = mote;
+        } else {
+          console.error(`[BaseLevel] Failed to recreate sprite for mote ${mote.id}`);
+          return;
+        }
+      } else {
+        // Sprite exists - just move and show it
+        moteSprite.setPosition(clampedX, clampedY);
+        moteSprite.setVisible(true);
+        moteSprite.setActive(true);
+      }
+      
+      // Visual effect - mote reappears with sparkle
+      moteSprite.setAlpha(0);
+      moteSprite.setScale(0.5);
+      
+      this.tweens.add({
+        targets: moteSprite,
+        alpha: 1,
+        scaleX: 1,
+        scaleY: 1,
+        duration: 400,
+        ease: 'Back.easeOut'
+      });
+      
+      // Sparkle effect
+      for (let i = 0; i < 5; i++) {
+        const sparkleAngle = (i / 5) * Math.PI * 2;
+        const sparkle = this.add.circle(
+          clampedX + Math.cos(sparkleAngle) * 20,
+          clampedY + Math.sin(sparkleAngle) * 20,
+          3,
+          0xffffff,
+          1
+        );
+        sparkle.setDepth(1000);
+        this.tweens.add({
+          targets: sparkle,
+          alpha: 0,
+          scaleX: 0.3,
+          scaleY: 0.3,
+          duration: 500,
+          onComplete: () => sparkle.destroy()
+        });
+      }
+      
+      respawnedCount++;
+    });
+    
+    console.log(`[BaseLevel] ✅ Respawned ${respawnedCount} motes at (${data.x}, ${data.y})`);
+    
+    // Validate state after respawn
+    this.validateMoteState();
+  }
+  
+  /**
+   * Validate mote state consistency between store and sprites
+   * Useful for debugging mote tracking issues
+   */
+  protected validateMoteState(): void {
+    const store = useGameStore.getState();
+    const storeMotes = store.motes;
+    const spriteMotes = new Map<number, any>();
+    
+    // Collect all sprite motes
+    this.moteSprites?.children.each((sprite: any) => {
+      if (sprite.moteId !== undefined) {
+        spriteMotes.set(sprite.moteId, sprite);
+      }
+    });
+    
+    console.log(`[BaseLevel] === MOTE STATE VALIDATION ===`);
+    console.log(`Store: ${storeMotes.length} total motes, ${store.motesCollected} collected`);
+    console.log(`Sprites: ${spriteMotes.size} mote sprites`);
+    
+    // Check for missing sprites (motes that should have sprites but don't)
+    const missingSprites: number[] = [];
+    storeMotes.forEach(mote => {
+      if (!mote.collected && !spriteMotes.has(mote.id)) {
+        missingSprites.push(mote.id);
+      }
+    });
+    
+    if (missingSprites.length > 0) {
+      console.warn(`[BaseLevel] ⚠️ Missing sprites for uncollected motes: [${missingSprites.join(', ')}]`);
+    }
+    
+    // Check for orphaned sprites (sprites without store entries)
+    const orphanedSprites: number[] = [];
+    spriteMotes.forEach((sprite, moteId) => {
+      const storeMote = storeMotes.find(m => m.id === moteId);
+      if (!storeMote) {
+        orphanedSprites.push(moteId);
+      }
+    });
+    
+    if (orphanedSprites.length > 0) {
+      console.warn(`[BaseLevel] ⚠️ Orphaned sprites (no store entry): [${orphanedSprites.join(', ')}]`);
+    }
+    
+    // Check for collected motes that still have sprites
+    const collectedWithSprites: number[] = [];
+    storeMotes.forEach(mote => {
+      if (mote.collected && spriteMotes.has(mote.id)) {
+        collectedWithSprites.push(mote.id);
+      }
+    });
+    
+    if (collectedWithSprites.length > 0) {
+      console.warn(`[BaseLevel] ⚠️ Collected motes that still have sprites: [${collectedWithSprites.join(', ')}]`);
+    }
+    
+    // Count consistency check
+    const uncollectedCount = storeMotes.filter(m => !m.collected).length;
+    const visibleSpriteCount = Array.from(spriteMotes.values()).filter((s: any) => s.active && s.visible).length;
+    
+    if (uncollectedCount !== visibleSpriteCount) {
+      console.warn(`[BaseLevel] ⚠️ Count mismatch: ${uncollectedCount} uncollected in store vs ${visibleSpriteCount} visible sprites`);
+    } else {
+      console.log(`[BaseLevel] ✅ Mote counts match: ${uncollectedCount} uncollected motes`);
+    }
+    
+    console.log(`[BaseLevel] === END VALIDATION ===`);
   }
   
   protected onPlayerShoot(data: { x: number; y: number; angle: number; speed: number }): void {

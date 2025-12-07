@@ -146,10 +146,10 @@ export const DIFFICULTIES: Record<Difficulty, DifficultyConfig> = {
 // =============================================================================
 
 export const GAME = {
-  // Arena dimensions
-  ARENA_WIDTH: 800,
-  ARENA_HEIGHT: 2400,        // 4 screen heights
-  VIEWPORT_HEIGHT: 600,
+  // Arena dimensions (50% larger than original)
+  ARENA_WIDTH: 1200,         // 800 * 1.5
+  ARENA_HEIGHT: 3600,         // 2400 * 1.5 (4 screen heights)
+  VIEWPORT_HEIGHT: 900,       // 600 * 1.5
   
   // Player (Lirien)
   PLAYER_SPEED: 250,

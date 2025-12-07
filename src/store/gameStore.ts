@@ -6,7 +6,7 @@
  */
 
 import { createStore } from 'zustand/vanilla';
-import { GAME, LEVELS, DIFFICULTIES } from '../config/gameConfig';
+import { GAME, LEVELS, DIFFICULTIES, RARITY_ORDER } from '../config/gameConfig';
 import type { Difficulty, CardRarity } from '../config/gameConfig';
 
 // =============================================================================
@@ -176,7 +176,7 @@ export interface GameState {
   // Motes
   initializeMotes: (count: number) => void;
   collectMote: (moteId: number) => void;
-  dropMotes: (count: number) => void;  // When hit by hostile drone
+  dropMotes: (count: number) => number[];  // When hit by hostile drone, returns dropped mote IDs
   
   // Combat
   unlockShooting: () => void;
@@ -442,16 +442,24 @@ export const gameStore = createStore<GameState>()((set, get) => ({
   },
   
   dropMotes: (count) => {
-    // When hit by hostile drone, drop some collected motes
+    // When hit by hostile drone or Q key pressed, drop some collected motes
     const state = get();
     const collectedMotes = state.motes.filter(m => m.collected);
     const toDrop = Math.min(count, collectedMotes.length);
     
-    if (toDrop === 0) return;
+    console.log(`[STORE] dropMotes called: count=${count}, collected=${collectedMotes.length}, toDrop=${toDrop}`);
+    
+    if (toDrop === 0) {
+      console.warn(`[STORE] dropMotes: No motes to drop (collected=${collectedMotes.length})`);
+      return [];
+    }
     
     // Drop the most recently collected ones
     const sortedByTime = [...collectedMotes].sort((a, b) => b.collectedAt - a.collectedAt);
-    const droppedIds = new Set(sortedByTime.slice(0, toDrop).map(m => m.id));
+    const droppedMotes = sortedByTime.slice(0, toDrop);
+    const droppedIds = new Set(droppedMotes.map(m => m.id));
+    
+    console.log(`[STORE] Dropping motes: ${droppedMotes.map(m => `id=${m.id}, seq=${m.sequenceNumber}`).join(', ')}`);
     
     const newMotes = state.motes.map(m =>
       droppedIds.has(m.id)
@@ -459,10 +467,25 @@ export const gameStore = createStore<GameState>()((set, get) => ({
         : m
     );
     
+    const newMotesCollected = state.motesCollected - toDrop;
+    
     set({
       motes: newMotes,
-      motesCollected: state.motesCollected - toDrop,
+      motesCollected: newMotesCollected,
     });
+    
+    // Validate state after drop
+    const verifyState = get();
+    const verifyCollected = verifyState.motes.filter(m => m.collected).length;
+    if (verifyCollected !== newMotesCollected) {
+      console.error(`[STORE] ⚠️ MOTE COUNT MISMATCH after drop! Expected ${newMotesCollected} collected, but store has ${verifyCollected}`);
+    }
+    
+    const droppedIdsArray = droppedMotes.map(m => m.id);
+    console.log(`[STORE] ✅ Dropped ${toDrop} motes. IDs: [${droppedIdsArray.join(', ')}]. New collected count: ${newMotesCollected}`);
+    
+    // Return the IDs of dropped motes so they can be respawned
+    return droppedIdsArray;
   },
   
   unlockShooting: () => set({ canShoot: true }),
@@ -604,9 +627,135 @@ export const gameStore = createStore<GameState>()((set, get) => ({
       }
     }
     
-    // Calculate rarity (simplified for now)
+    // Calculate rarity based on performance
     let finalRarity: CardRarity = 'common';
-    // TODO: Implement full rarity calculation
+    
+    console.log(`[STORE] Rarity calculation start: outcome=${outcome}, sequencePerfect=${sequencePerfect}, sequenceCorrect=${state.sequenceCorrect}, motesCollected=${state.motesCollected}, moteCount=${config.moteCount}, badges=[${badges.join(', ')}]`);
+    
+    // Check for special ultimates first
+    if (outcome === 'lose' && badges.includes('defiant_ultimate')) {
+      finalRarity = 'defiant_ultimate';
+      console.log(`[STORE] → Defiant Ultimate (all defiant badges)`);
+    } else if (outcome === 'win') {
+      // Check for Prismatic Ultimate (perfect sequences on all completed levels)
+      const updatedState = get();
+      const allCompleted = updatedState.completedLevels.length + 1; // +1 for current level
+      const allPerfect = updatedState.allSequencesPerfect && sequencePerfect;
+      
+      console.log(`[STORE] Prismatic check: allSequencesPerfect=${updatedState.allSequencesPerfect}, sequencePerfect=${sequencePerfect}, allCompleted=${allCompleted}`);
+      
+      // Prismatic Ultimate: perfect sequence on all levels (all 7 levels)
+      if (allPerfect && allCompleted >= 7) {
+        finalRarity = 'prismatic_ultimate';
+        console.log(`[STORE] → Prismatic Ultimate (perfect sequences on all 7 levels)`);
+      } else {
+        // Calculate base rarity from sequence performance
+        const sequenceRatio = config.moteCount > 0 
+          ? state.sequenceCorrect / config.moteCount 
+          : 0;
+        const allMotesCollected = state.motesCollected === config.moteCount;
+        
+        console.log(`[STORE] Sequence stats: ratio=${sequenceRatio.toFixed(2)}, allMotesCollected=${allMotesCollected}`);
+        
+        // Base rarity from sequence performance
+        if (sequencePerfect && allMotesCollected) {
+          // Perfect sequence + all motes = Ultimate
+          finalRarity = 'ultimate';
+          console.log(`[STORE] → Ultimate (perfect sequence + all motes)`);
+        } else if (sequenceRatio >= 0.9 && allMotesCollected) {
+          // 90%+ sequence accuracy + all motes = Mythic
+          finalRarity = 'mythic';
+          console.log(`[STORE] → Mythic (90%+ sequence + all motes)`);
+        } else if (sequenceRatio >= 0.7 && allMotesCollected) {
+          // 70%+ sequence accuracy + all motes = Legendary
+          finalRarity = 'legendary';
+          console.log(`[STORE] → Legendary (70%+ sequence + all motes)`);
+        } else if (sequenceRatio >= 0.5 && allMotesCollected) {
+          // 50%+ sequence accuracy + all motes = Epic
+          finalRarity = 'epic';
+          console.log(`[STORE] → Epic (50%+ sequence + all motes)`);
+        } else if (allMotesCollected) {
+          // All motes but poor sequence = Rare
+          finalRarity = 'rare';
+          console.log(`[STORE] → Rare (all motes but poor sequence)`);
+        } else if (sequenceRatio >= 0.8) {
+          // High sequence accuracy but missing motes = Uncommon
+          finalRarity = 'uncommon';
+          console.log(`[STORE] → Uncommon (high sequence but missing motes)`);
+        } else {
+          // Default
+          finalRarity = 'common';
+          console.log(`[STORE] → Common (default)`);
+        }
+        
+        // Boost rarity based on badges and achievements
+        let rarityBoost = 0;
+        
+        if (badges.includes('flawless')) {
+          rarityBoost += 1;
+          console.log(`[STORE] +1 boost: flawless (full lives)`);
+        }
+        if (badges.includes('harmonic')) {
+          rarityBoost += 1;
+          console.log(`[STORE] +1 boost: harmonic (perfect sequence badge)`);
+        }
+        if (badges.includes('mentor_blessed')) {
+          rarityBoost += 0.5;
+          console.log(`[STORE] +0.5 boost: mentor_blessed`);
+        }
+        if (badges.includes('drone_denial')) {
+          rarityBoost += 0.5;
+          console.log(`[STORE] +0.5 boost: drone_denial`);
+        }
+        
+        // Time bonus (more time remaining = better)
+        const timeRatio = totalTime > 0 ? state.timeRemaining / totalTime : 0;
+        if (timeRatio > 0.75) {
+          rarityBoost += 0.5;
+          console.log(`[STORE] +0.5 boost: time > 75%`);
+        } else if (timeRatio > 0.5) {
+          rarityBoost += 0.5;
+          console.log(`[STORE] +0.5 boost: time > 50%`);
+        }
+        
+        // Apply boost (but don't exceed ultimate unless it's prismatic)
+        if (rarityBoost > 0 && finalRarity !== 'ultimate' && finalRarity !== 'prismatic_ultimate') {
+          const currentIndex = RARITY_ORDER.indexOf(finalRarity);
+          const boostedIndex = Math.min(
+            currentIndex + Math.floor(rarityBoost),
+            RARITY_ORDER.indexOf('ultimate')
+          );
+          const oldRarity = finalRarity;
+          finalRarity = RARITY_ORDER[boostedIndex];
+          console.log(`[STORE] Rarity boosted: ${oldRarity} → ${finalRarity} (boost=${rarityBoost})`);
+        } else if (rarityBoost > 0) {
+          console.log(`[STORE] No boost applied (already at ${finalRarity})`);
+        }
+      }
+    } else {
+      // Lose outcome - lower rarities, but can still get defiant_ultimate (already checked)
+      const sequenceRatio = state.motesCollected > 0
+        ? state.sequenceCorrect / state.motesCollected
+        : 0;
+      
+      if (partialSequencePerfect && state.motesCollected >= config.moteCount * 0.8) {
+        // Good partial sequence = Uncommon
+        finalRarity = 'uncommon';
+        console.log(`[STORE] → Uncommon (good partial sequence on loss)`);
+      } else if (sequenceRatio >= 0.7 && state.motesCollected > 0) {
+        // Decent sequence = Rare
+        finalRarity = 'rare';
+        console.log(`[STORE] → Rare (decent sequence on loss)`);
+      } else if (state.motesCollected > 0) {
+        // Some motes collected = Uncommon
+        finalRarity = 'uncommon';
+        console.log(`[STORE] → Uncommon (some motes collected on loss)`);
+      } else {
+        console.log(`[STORE] → Common (loss with no motes)`);
+      }
+    }
+    
+    console.log(`[STORE] ✅ Final rarity: ${finalRarity}`);
     
     const levelStats: LevelStats = {
       levelIndex: state.currentLevelIndex,

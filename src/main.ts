@@ -10,6 +10,7 @@
 
 import Phaser from 'phaser';
 import { GAME } from './config/gameConfig';
+import './styles/carousel.css'; // Import carousel styles for reference
 
 // Scenes
 import { BootScene } from './scenes/BootScene';
@@ -58,12 +59,12 @@ const config: Phaser.Types.Core.GameConfig = {
     mode: Phaser.Scale.FIT,
     autoCenter: Phaser.Scale.CENTER_BOTH,
     min: {
-      width: 400,
-      height: 300
+      width: 600,
+      height: 450
     },
     max: {
-      width: 1600,
-      height: 1200
+      width: 2400,
+      height: 1800
     }
   },
   

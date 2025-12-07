@@ -285,9 +285,9 @@ export class LevelComplete extends Phaser.Scene {
     overlay.fillRect(0, 0, GAME.ARENA_WIDTH, GAME.VIEWPORT_HEIGHT);
     overlay.setDepth(-99);
     
-    // Cycle through images every 8 seconds (104s total / 13 = 8s each)
+    // Cycle through images every 4 seconds (half the original time)
     this.time.addEvent({
-      delay: 8000,
+      delay: 4000, // 4 seconds per image (half of original 8s)
       callback: () => {
         this.backgroundCycleIndex = (this.backgroundCycleIndex + 1) % this.backgroundImageKeys.length;
         const nextKey = this.backgroundImageKeys[this.backgroundCycleIndex];

@@ -1,10 +1,11 @@
 <!doctype html>
 <html lang="en">
+  <link rel="stylesheet" href="src\styles\carousel.css">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Spectral Quest: Rainbow Craft</title>
+    <title><h1>Spectral Quest: Rainbow Craft</h1></title>
     <style>
       body {
         margin: 0;
@@ -14,11 +15,880 @@
         align-items: center;
         min-height: 100vh;
         background: #000;
+        overflow: hidden;
+      }
+      
+      /* Background container - fills entire viewport */
+      #bg-container {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: 0;
+      }
+      
+      /* Two background layers for smooth crossfade */
+      .bg-layer {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+        transition: opacity 3s ease-in-out;
+      }
+      
+      #bg-layer-1 {
+        opacity: 0.8;
+        z-index: 1;
+      }
+      
+      #bg-layer-2 {
+        opacity: 0;
+        z-index: 2;
+      }
+      
+      /* Game container sits on top */
+      #game-wrapper {
+        position: relative;
+        z-index: 10;
+      }
+      
+      /* Hide backgrounds until loaded */
+      body.loading #bg-container {
+        opacity: 0;
+      }
+      
+      body.loaded #bg-container {
+        opacity: 1;
+        transition: opacity 0.5s ease-in;
+      }
+      
+      @media (prefers-reduced-motion: reduce) {
+        .bg-layer {
+          transition: none;
+        }
+        body.loaded #bg-container {
+          transition: none;
+        }
       }
     </style>
   </head>
-  <body>
-    <div id="game"></div>
+  <body class="loading">
+    <!-- Dual-layer background for smooth crossfade -->
+    <div id="bg-container">
+      <div id="bg-layer-1" class="bg-layer"></div>
+      <div id="bg-layer-2" class="bg-layer"></div>
+    </div>
+    
+    <!-- Game canvas wrapper -->
+    <div id="game-wrapper">
+      <div id="game"></div>
+    </div>
+    
+    <!-- HTML/CSS Menu Overlay -->
+    <div id="game-menu-overlay" style="
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 1000;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      pointer-events: all;
+    ">
+      
+      <!-- Title with animated background (dual-layer for smooth crossfade) -->
+      <h1 id="menu-title" style="
+        font-size: 4.5em;
+        margin-bottom: 20px;
+        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+        position: relative;
+        font-family: 'Montserrat', sans-serif;
+        font-weight: bold;
+        filter: drop-shadow(0 0 0.5px #fff);
+      ">
+        <span class="title-bg-layer title-bg-1" style="
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          background-size: cover;
+          background-position: center;
+          background-repeat: no-repeat;
+          -webkit-background-clip: text;
+          background-clip: text;
+          -webkit-text-fill-color: transparent;
+          color: transparent;
+          opacity: 1;
+          transition: opacity 3s ease-in-out;
+        ">SPECTRAL QUEST</span>
+        <span class="title-bg-layer title-bg-2" style="
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          background-size: cover;
+          background-position: center;
+          background-repeat: no-repeat;
+          -webkit-background-clip: text;
+          background-clip: text;
+          -webkit-text-fill-color: transparent;
+          color: transparent;
+          opacity: 0;
+          transition: opacity 3s ease-in-out;
+        ">SPECTRAL QUEST</span>
+        <span style="position: relative; z-index: 1; opacity: 0;">SPECTRAL QUEST</span>
+      </h1>
+      
+      <!-- Subtitle -->
+      <p style="
+        color: #dcfca1;
+        font-size: 1.5em;
+        margin-bottom: 10px;
+        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+        font-family: 'Montserrat', sans-serif;
+        font-style: italic;
+      ">✨ Rainbow Craft ✨</p>
+      
+      <!-- Difficulty section label -->
+      <p style="
+        font-size: 1.5em;
+        margin-bottom: 30px;
+        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+        position: relative;
+        display: inline-block;
+        font-family: 'Montserrat', sans-serif;
+        font-weight: bold;
+        filter: drop-shadow(0 0 0.5px #fff);
+      ">
+        <span class="paragraph-bg-layer paragraph-bg-1 challenge-text" style="
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          background-size: cover;
+          background-position: center;
+          background-repeat: no-repeat;
+          -webkit-background-clip: text;
+          background-clip: text;
+          -webkit-text-fill-color: transparent;
+          color: transparent;
+          opacity: 1;
+          transition: opacity 3s ease-in-out;
+        ">Choose Your Challenge</span>
+        <span class="paragraph-bg-layer paragraph-bg-2 challenge-text" style="
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          background-size: cover;
+          background-position: center;
+          background-repeat: no-repeat;
+          -webkit-background-clip: text;
+          background-clip: text;
+          -webkit-text-fill-color: transparent;
+          color: transparent;
+          opacity: 0;
+          transition: opacity 3s ease-in-out;
+        ">Choose Your Challenge</span>
+        <span style="position: relative; z-index: 1; opacity: 0;">Choose Your Challenge</span>
+      </p>
+      
+      <!-- Difficulty buttons row -->
+      <div style="
+        display: flex;
+        gap: 20px;
+        margin-bottom: 40px;
+        flex-wrap: wrap;
+        justify-content: center;
+      ">
+        
+        <!-- Dreamer Button -->
+        <button class="difficulty-btn nav-button" data-difficulty="dreamer" style="
+          padding: 20px 30px;
+          min-width: 180px;
+          min-height: 100px;
+          border-radius: 25px;
+          border: 2px solid rgba(255, 255, 255, 0.3);
+          position: relative;
+          overflow: hidden;
+          cursor: pointer;
+          background: rgba(0, 0, 0, 0.5);
+          color: white;
+          font-family: 'Montserrat', sans-serif;
+          font-weight: bold;
+          transition: transform 0.3s ease, box-shadow 0.3s ease;
+          box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+        ">
+          <div class="btn-bg-layer btn-bg-1" style="
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-size: cover;
+            background-position: center;
+            border-radius: 25px;
+            z-index: -1;
+            opacity: 1;
+            transition: opacity 3s ease-in-out;
+          "></div>
+          <div class="btn-bg-layer btn-bg-2" style="
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-size: cover;
+            background-position: center;
+            border-radius: 25px;
+            z-index: -1;
+            opacity: 0;
+            transition: opacity 3s ease-in-out;
+          "></div>
+          <h4 style="
+            font-size: 1.5em;
+            margin: 0 0 5px 0;
+            position: relative;
+            filter: drop-shadow(0 0 1px #fff);
+            font-family: 'Montserrat', sans-serif;
+            font-weight: bold;
+          ">
+            <span class="h4-bg-layer h4-bg-1" style="
+              position: absolute;
+              top: 0;
+              left: 0;
+              width: 100%;
+              height: 100%;
+              background-size: cover;
+              background-position: center;
+              -webkit-background-clip: text;
+              background-clip: text;
+              -webkit-text-fill-color: transparent;
+              opacity: 1;
+              transition: opacity 3s ease-in-out;
+            ">Dreamer</span>
+            <span class="h4-bg-layer h4-bg-2" style="
+              position: absolute;
+              top: 0;
+              left: 0;
+              width: 100%;
+              height: 100%;
+              background-size: cover;
+              background-position: center;
+              -webkit-background-clip: text;
+              background-clip: text;
+              -webkit-text-fill-color: transparent;
+              opacity: 0;
+              transition: opacity 3s ease-in-out;
+            ">Dreamer</span>
+            <span style="position: relative; z-index: 1; opacity: 0;">Dreamer</span>
+          </h4>
+          <p style="
+            font-size: 0.9em;
+            margin: 0;
+            color: white;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+            font-family: 'Montserrat', sans-serif;
+          ">Relaxed pace,<br>forgiving energy</p>
+        </button>
+        
+        <!-- Weaver Button -->
+        <button class="difficulty-btn nav-button" data-difficulty="weaver" style="
+          padding: 20px 30px;
+          min-width: 180px;
+          min-height: 100px;
+          border-radius: 25px;
+          border: 3px solid #667eea;
+          position: relative;
+          overflow: hidden;
+          cursor: pointer;
+          background: rgba(0, 0, 0, 0.5);
+          color: white;
+          font-family: 'Montserrat', sans-serif;
+          font-weight: bold;
+          transition: transform 0.3s ease, box-shadow 0.3s ease;
+          box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+        ">
+          <div class="btn-bg-layer btn-bg-1" style="
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-size: cover;
+            background-position: center;
+            border-radius: 25px;
+            z-index: -1;
+            opacity: 1;
+            transition: opacity 3s ease-in-out;
+          "></div>
+          <div class="btn-bg-layer btn-bg-2" style="
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-size: cover;
+            background-position: center;
+            border-radius: 25px;
+            z-index: -1;
+            opacity: 0;
+            transition: opacity 3s ease-in-out;
+          "></div>
+          <h4 style="
+            font-size: 1.5em;
+            margin: 0 0 5px 0;
+            position: relative;
+            filter: drop-shadow(0 0 1px #fff);
+            font-family: 'Montserrat', sans-serif;
+            font-weight: bold;
+          ">
+            <span class="h4-bg-layer h4-bg-1" style="
+              position: absolute;
+              top: 0;
+              left: 0;
+              width: 100%;
+              height: 100%;
+              background-size: cover;
+              background-position: center;
+              -webkit-background-clip: text;
+              background-clip: text;
+              -webkit-text-fill-color: transparent;
+              opacity: 1;
+              transition: opacity 3s ease-in-out;
+            ">Weaver</span>
+            <span class="h4-bg-layer h4-bg-2" style="
+              position: absolute;
+              top: 0;
+              left: 0;
+              width: 100%;
+              height: 100%;
+              background-size: cover;
+              background-position: center;
+              -webkit-background-clip: text;
+              background-clip: text;
+              -webkit-text-fill-color: transparent;
+              opacity: 0;
+              transition: opacity 3s ease-in-out;
+            ">Weaver</span>
+            <span style="position: relative; z-index: 1; opacity: 0;">Weaver</span>
+          </h4>
+          <p style="
+            font-size: 0.9em;
+            margin: 0;
+            color: white;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+            font-family: 'Montserrat', sans-serif;
+          ">Standard challenge</p>
+        </button>
+        
+        <!-- Dancer Button -->
+        <button class="difficulty-btn nav-button" data-difficulty="dancer" style="
+          padding: 20px 30px;
+          min-width: 180px;
+          min-height: 100px;
+          border-radius: 25px;
+          border: 2px solid rgba(255, 255, 255, 0.3);
+          position: relative;
+          overflow: hidden;
+          cursor: pointer;
+          background: rgba(0, 0, 0, 0.5);
+          color: white;
+          font-family: 'Montserrat', sans-serif;
+          font-weight: bold;
+          transition: transform 0.3s ease, box-shadow 0.3s ease;
+          box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+        ">
+          <div class="btn-bg-layer btn-bg-1" style="
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-size: cover;
+            background-position: center;
+            border-radius: 25px;
+            z-index: -1;
+            opacity: 1;
+            transition: opacity 3s ease-in-out;
+          "></div>
+          <div class="btn-bg-layer btn-bg-2" style="
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-size: cover;
+            background-position: center;
+            border-radius: 25px;
+            z-index: -1;
+            opacity: 0;
+            transition: opacity 3s ease-in-out;
+          "></div>
+          <h4 style="
+            font-size: 1.5em;
+            margin: 0 0 5px 0;
+            position: relative;
+            filter: drop-shadow(0 0 1px #fff);
+            font-family: 'Montserrat', sans-serif;
+            font-weight: bold;
+          ">
+            <span class="h4-bg-layer h4-bg-1" style="
+              position: absolute;
+              top: 0;
+              left: 0;
+              width: 100%;
+              height: 100%;
+              background-size: cover;
+              background-position: center;
+              -webkit-background-clip: text;
+              background-clip: text;
+              -webkit-text-fill-color: transparent;
+              opacity: 1;
+              transition: opacity 3s ease-in-out;
+            ">Dancer</span>
+            <span class="h4-bg-layer h4-bg-2" style="
+              position: absolute;
+              top: 0;
+              left: 0;
+              width: 100%;
+              height: 100%;
+              background-size: cover;
+              background-position: center;
+              -webkit-background-clip: text;
+              background-clip: text;
+              -webkit-text-fill-color: transparent;
+              opacity: 0;
+              transition: opacity 3s ease-in-out;
+            ">Dancer</span>
+            <span style="position: relative; z-index: 1; opacity: 0;">Dancer</span>
+          </h4>
+          <p style="
+            font-size: 0.9em;
+            margin: 0;
+            color: white;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+            font-family: 'Montserrat', sans-serif;
+          ">Fast and demanding</p>
+        </button>
+        
+        <!-- Master Button -->
+        <button class="difficulty-btn nav-button" data-difficulty="master" style="
+          padding: 20px 30px;
+          min-width: 180px;
+          min-height: 100px;
+          border-radius: 25px;
+          border: 2px solid rgba(255, 255, 255, 0.3);
+          position: relative;
+          overflow: hidden;
+          cursor: pointer;
+          background: rgba(0, 0, 0, 0.5);
+          color: white;
+          font-family: 'Montserrat', sans-serif;
+          font-weight: bold;
+          transition: transform 0.3s ease, box-shadow 0.3s ease;
+          box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+        ">
+          <div class="btn-bg-layer btn-bg-1" style="
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-size: cover;
+            background-position: center;
+            border-radius: 25px;
+            z-index: -1;
+            opacity: 1;
+            transition: opacity 3s ease-in-out;
+          "></div>
+          <div class="btn-bg-layer btn-bg-2" style="
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-size: cover;
+            background-position: center;
+            border-radius: 25px;
+            z-index: -1;
+            opacity: 0;
+            transition: opacity 3s ease-in-out;
+          "></div>
+          <h4 style="
+            font-size: 1.5em;
+            margin: 0 0 5px 0;
+            position: relative;
+            filter: drop-shadow(0 0 1px #fff);
+            font-family: 'Montserrat', sans-serif;
+            font-weight: bold;
+          ">
+            <span class="h4-bg-layer h4-bg-1" style="
+              position: absolute;
+              top: 0;
+              left: 0;
+              width: 100%;
+              height: 100%;
+              background-size: cover;
+              background-position: center;
+              -webkit-background-clip: text;
+              background-clip: text;
+              -webkit-text-fill-color: transparent;
+              opacity: 1;
+              transition: opacity 3s ease-in-out;
+            ">Master</span>
+            <span class="h4-bg-layer h4-bg-2" style="
+              position: absolute;
+              top: 0;
+              left: 0;
+              width: 100%;
+              height: 100%;
+              background-size: cover;
+              background-position: center;
+              -webkit-background-clip: text;
+              background-clip: text;
+              -webkit-text-fill-color: transparent;
+              opacity: 0;
+              transition: opacity 3s ease-in-out;
+            ">Master</span>
+            <span style="position: relative; z-index: 1; opacity: 0;">Master</span>
+          </h4>
+          <p style="
+            font-size: 0.9em;
+            margin: 0;
+            color: white;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+            font-family: 'Montserrat', sans-serif;
+          ">Brutal precision<br>required</p>
+        </button>
+        
+      </div>
+      
+      <!-- START Button -->
+      <button id="start-btn" class="nav-button" style="
+        padding: 20px 60px;
+        font-size: 2em;
+        border-radius: 40px;
+        border: none;
+        position: relative;
+        overflow: hidden;
+        cursor: pointer;
+        background: rgba(0, 0, 0, 0.5);
+        color: white;
+        font-family: 'Montserrat', sans-serif;
+        font-weight: bold;
+        margin-bottom: 30px;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+      ">
+        <div class="btn-bg-layer btn-bg-1" style="
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          background-size: cover;
+          background-position: center;
+          border-radius: 40px;
+          z-index: -1;
+          opacity: 1;
+          transition: opacity 3s ease-in-out;
+        "></div>
+        <div class="btn-bg-layer btn-bg-2" style="
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          background-size: cover;
+          background-position: center;
+          border-radius: 40px;
+          z-index: -1;
+          opacity: 0;
+          transition: opacity 3s ease-in-out;
+        "></div>
+        START
+      </button>
+      
+      <!-- Controls info -->
+      <p style="
+        font-size: 1.2em;
+        margin-bottom: 20px;
+        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+        position: relative;
+        display: inline-block;
+        font-family: 'Montserrat', sans-serif;
+        font-weight: bold;
+        filter: drop-shadow(0 0 0.5px #fff);
+      ">
+        <span class="paragraph-bg-layer paragraph-bg-1 controls-text" style="
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          background-size: cover;
+          background-position: center;
+          background-repeat: no-repeat;
+          -webkit-background-clip: text;
+          background-clip: text;
+          -webkit-text-fill-color: transparent;
+          color: transparent;
+          opacity: 1;
+          transition: opacity 3s ease-in-out;
+        ">WASD: Move • Space: Shoot • Mouse: Aim • Q: Drop Mote</span>
+        <span class="paragraph-bg-layer paragraph-bg-2 controls-text" style="
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          background-size: cover;
+          background-position: center;
+          background-repeat: no-repeat;
+          -webkit-background-clip: text;
+          background-clip: text;
+          -webkit-text-fill-color: transparent;
+          color: transparent;
+          opacity: 0;
+          transition: opacity 3s ease-in-out;
+        ">WASD: Move • Space: Shoot • Mouse: Aim • Q: Drop Mote</span>
+        <span style="position: relative; z-index: 1; opacity: 0;">WASD: Move • Space: Shoot • Mouse: Aim • Q: Drop Mote</span>
+      </p>
+      
+      <!-- Wallet Button -->
+      <button id="wallet-btn" class="nav-button" style="
+        padding: 12px 30px;
+        border-radius: 25px;
+        border: none;
+        position: relative;
+        overflow: hidden;
+        cursor: pointer;
+        background: rgba(0, 0, 0, 0.5);
+        color: white;
+        font-family: 'Montserrat', sans-serif;
+        font-weight: bold;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+      ">
+        <div class="btn-bg-layer btn-bg-1" style="
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          background-size: cover;
+          background-position: center;
+          border-radius: 25px;
+          z-index: -1;
+          opacity: 1;
+          transition: opacity 3s ease-in-out;
+        "></div>
+        <div class="btn-bg-layer btn-bg-2" style="
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          background-size: cover;
+          background-position: center;
+          border-radius: 25px;
+          z-index: -1;
+          opacity: 0;
+          transition: opacity 3s ease-in-out;
+        "></div>
+        🔗 Connect Wallet
+      </button>
+      
+      <p id="wallet-status" style="
+        color: #ff8888;
+        font-size: 1em;
+        margin-top: 10px;
+        text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+        font-family: 'Montserrat', sans-serif;
+      ">🔗 Wallet: Not Connected</p>
+      
+    </div>
+    
+    <!-- Background preloader and animator -->
+    <script>
+      const backgroundImages = [
+        '/images/HummingBow.jpg',
+        '/images/IMG_6794.JPEG',
+        '/images/IMG_6795.JPEG',
+        '/images/IMG_6796.JPEG',
+        '/images/IMG_6797.JPEG',
+        '/images/TunnelBow.JPEG',
+        '/images/IMG_6906.JPEG',
+        '/images/IMG_6907.JPEG',
+        '/images/IMG_6908.JPEG',
+        '/images/IMG_6909.JPEG',
+        '/images/IMG_6910.JPEG',
+        '/images/IMG_6911.JPEG',
+        '/images/IMG_6912.JPEG'
+      ];
+      
+      // Preload all images
+      let loadedCount = 0;
+      const imageCache = [];
+      
+      backgroundImages.forEach((path, index) => {
+        const img = new Image();
+        img.onload = () => {
+          loadedCount++;
+          imageCache[index] = path;
+          
+          // When all images loaded, start animation
+          if (loadedCount === backgroundImages.length) {
+            document.body.classList.remove('loading');
+            document.body.classList.add('loaded');
+            startBackgroundAnimation();
+            console.log('✅ All background images preloaded, animation started');
+          }
+        };
+        img.onerror = () => {
+          console.warn(`⚠️ Failed to load background: ${path}`);
+          loadedCount++;
+          // Still try to start animation even if some images fail
+          if (loadedCount === backgroundImages.length) {
+            document.body.classList.remove('loading');
+            document.body.classList.add('loaded');
+            startBackgroundAnimation();
+          }
+        };
+        img.src = path;
+      });
+      
+      function startBackgroundAnimation() {
+        const layer1 = document.getElementById('bg-layer-1');
+        const layer2 = document.getElementById('bg-layer-2');
+        
+        // Set initial image
+        layer1.style.backgroundImage = `url('${imageCache[0]}')`;
+        
+        let currentIndex = 0;
+        let useLayer1 = true; // Track which layer is currently visible
+        
+        setInterval(() => {
+          currentIndex = (currentIndex + 1) % imageCache.length;
+          const nextImage = imageCache[currentIndex];
+          
+          if (useLayer1) {
+            // Fade to layer 2
+            layer2.style.backgroundImage = `url('${nextImage}')`;
+            layer2.style.opacity = '0.8';
+            layer1.style.opacity = '0';
+          } else {
+            // Fade to layer 1
+            layer1.style.backgroundImage = `url('${nextImage}')`;
+            layer1.style.opacity = '0.8';
+            layer2.style.opacity = '0';
+          }
+          
+          useLayer1 = !useLayer1; // Toggle for next iteration
+        }, 8000); // 8 seconds per image (more gradual, with 3s crossfade overlap)
+        
+        // Start menu animations after background is ready
+        startMenuAnimations();
+      }
+      
+      function startMenuAnimations() {
+        // Wait a bit for images to be fully loaded
+        setTimeout(() => {
+          // Get all animated elements
+          const titleBg1 = document.querySelector('.title-bg-1');
+          const titleBg2 = document.querySelector('.title-bg-2');
+          const btnBgs1 = document.querySelectorAll('.btn-bg-1');
+          const btnBgs2 = document.querySelectorAll('.btn-bg-2');
+          const h4Bgs1 = document.querySelectorAll('.h4-bg-1');
+          const h4Bgs2 = document.querySelectorAll('.h4-bg-2');
+          const paragraphBgs1 = document.querySelectorAll('.paragraph-bg-1');
+          const paragraphBgs2 = document.querySelectorAll('.paragraph-bg-2');
+          
+          // Set initial images
+          if (imageCache.length > 0) {
+            const initialImage = `url('${imageCache[0]}')`;
+            if (titleBg1) titleBg1.style.backgroundImage = initialImage;
+            btnBgs1.forEach(bg => bg.style.backgroundImage = initialImage);
+            h4Bgs1.forEach(bg => bg.style.backgroundImage = initialImage);
+            paragraphBgs1.forEach(bg => bg.style.backgroundImage = initialImage);
+          }
+          
+          let currentIndex = 0;
+          let useLayer1 = true;
+          
+          setInterval(() => {
+            currentIndex = (currentIndex + 1) % imageCache.length;
+            const nextImage = `url('${imageCache[currentIndex]}')`;
+            
+            if (useLayer1) {
+              // Fade to layer 2
+              if (titleBg2) titleBg2.style.backgroundImage = nextImage;
+              btnBgs2.forEach(bg => bg.style.backgroundImage = nextImage);
+              h4Bgs2.forEach(bg => bg.style.backgroundImage = nextImage);
+              paragraphBgs2.forEach(bg => bg.style.backgroundImage = nextImage);
+              
+              // Crossfade
+              if (titleBg1) titleBg1.style.opacity = '0';
+              if (titleBg2) titleBg2.style.opacity = '1';
+              btnBgs1.forEach(bg => bg.style.opacity = '0');
+              btnBgs2.forEach(bg => bg.style.opacity = '1');
+              h4Bgs1.forEach(bg => bg.style.opacity = '0');
+              h4Bgs2.forEach(bg => bg.style.opacity = '1');
+              paragraphBgs1.forEach(bg => bg.style.opacity = '0');
+              paragraphBgs2.forEach(bg => bg.style.opacity = '1');
+            } else {
+              // Fade to layer 1
+              if (titleBg1) titleBg1.style.backgroundImage = nextImage;
+              btnBgs1.forEach(bg => bg.style.backgroundImage = nextImage);
+              h4Bgs1.forEach(bg => bg.style.backgroundImage = nextImage);
+              paragraphBgs1.forEach(bg => bg.style.backgroundImage = nextImage);
+              
+              // Crossfade
+              if (titleBg1) titleBg1.style.opacity = '1';
+              if (titleBg2) titleBg2.style.opacity = '0';
+              btnBgs1.forEach(bg => bg.style.opacity = '1');
+              btnBgs2.forEach(bg => bg.style.opacity = '0');
+              h4Bgs1.forEach(bg => bg.style.opacity = '1');
+              h4Bgs2.forEach(bg => bg.style.opacity = '0');
+              paragraphBgs1.forEach(bg => bg.style.opacity = '1');
+              paragraphBgs2.forEach(bg => bg.style.opacity = '0');
+            }
+            
+            useLayer1 = !useLayer1;
+          }, 8000); // 8 seconds per image (matching main background)
+        }, 500); // Small delay to ensure images are ready
+      }
+    </script>
+    
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>

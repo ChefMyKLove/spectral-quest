@@ -223,9 +223,9 @@ export class CrimsonLevel extends BaseLevel {
     this.tutorialBackgroundImageNext.setDepth(1996);
     this.tutorialBackgroundImageNext.setAlpha(0);
     
-    // Cycle through images every 8 seconds
+    // Cycle through images every 4 seconds (half the original time)
     this.time.addEvent({
-      delay: 8000,
+      delay: 4000, // 4 seconds per image (half of original 8s)
       callback: () => {
         this.tutorialBackgroundCycleIndex = (this.tutorialBackgroundCycleIndex + 1) % this.tutorialBackgroundImageKeys.length;
         const nextKey = this.tutorialBackgroundImageKeys[this.tutorialBackgroundCycleIndex];

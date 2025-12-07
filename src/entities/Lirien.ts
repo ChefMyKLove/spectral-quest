@@ -72,6 +72,7 @@ export class Lirien extends Phaser.Physics.Arcade.Sprite {
   }
   
   private ejectKey!: Phaser.Input.Keyboard.Key;
+  private ejectKeyWasDown: boolean = false;
   
   private setupVisuals(): void {
     // Rainbow carpet trail particles
@@ -245,10 +246,18 @@ export class Lirien extends Phaser.Physics.Arcade.Sprite {
     const store = useGameStore.getState();
     
     // Check if Q key was just pressed (not held)
-    if (!Phaser.Input.Keyboard.JustDown(this.scene.input.keyboard!, this.ejectKey)) return;
+    if (!this.ejectKey) return;
+    const isDown = this.ejectKey.isDown;
+    const justPressed = isDown && !this.ejectKeyWasDown;
+    this.ejectKeyWasDown = isDown;
+    
+    if (!justPressed) return;
     
     // Can only eject if you have motes
-    if (store.motesCollected <= 0) return;
+    if (store.motesCollected <= 0) {
+      console.log('[Lirien] Q pressed but no motes to eject');
+      return;
+    }
     
     // Eject the last collected mote (to restore sequence order)
     // Find the last collected mote
@@ -257,13 +266,27 @@ export class Lirien extends Phaser.Physics.Arcade.Sprite {
     
     if (collectedMotes.length > 0) {
       const moteToEject = collectedMotes[0];
+      console.log(`[Lirien] Ejecting mote id=${moteToEject.id}, seq=${moteToEject.sequenceNumber} at (${this.x.toFixed(0)}, ${this.y.toFixed(0)})`);
       
       // Eject it - drop it at current position
-      store.dropMotes(1);
+      const droppedIds = store.dropMotes(1);
+      
+      if (droppedIds.length === 0) {
+        console.error(`[Lirien] ⚠️ dropMotes returned empty array! Expected to drop mote ${moteToEject.id}`);
+        return;
+      }
       
       // Emit event to scene to respawn the mote
+      // Use the dropped ID if available, otherwise use the mote we found
+      const moteId = droppedIds.length > 0 ? droppedIds[0] : moteToEject.id;
+      
+      if (moteId !== moteToEject.id) {
+        console.warn(`[Lirien] ⚠️ Mote ID mismatch: expected ${moteToEject.id}, got ${moteId} from dropMotes`);
+      }
+      
+      console.log(`[Lirien] Emitting moteEjected event for mote ${moteId}`);
       this.scene.events.emit('moteEjected', {
-        moteId: moteToEject.id,
+        moteId: moteId,
         x: this.x,
         y: this.y
       });
@@ -282,6 +305,8 @@ export class Lirien extends Phaser.Physics.Arcade.Sprite {
         duration: 800,
         onComplete: () => ejectText.destroy()
       });
+    } else {
+      console.warn(`[Lirien] ⚠️ Q pressed but no collected motes found (store says ${store.motesCollected} collected)`);
     }
   }
   

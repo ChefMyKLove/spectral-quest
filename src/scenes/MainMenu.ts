@@ -1,27 +1,23 @@
 /**
  * MAIN MENU SCENE
  * 
- * Bubbly, rounded aesthetic with rainbow vibes.
+ * Difficulty selection and game start screen.
+ * Features cycling background images and floating bubbles.
  */
 
 import Phaser from 'phaser';
 import { useGameStore } from '../store/gameStore';
-import { GAME, DIFFICULTIES, LEVELS } from '../config/gameConfig';
-import type { Difficulty } from '../config/gameConfig';
-import { initializeWallet, getWallet, resetWallet } from '../systems/bsv/walletAdapter';
-import { BSV_CONFIG } from '../systems/bsv/config';
+import { GAME, LEVELS } from '../config/gameConfig';
+
+// Global test mode flag
+declare global {
+  interface Window {
+    TEST_MODE?: boolean;
+  }
+}
 
 export class MainMenu extends Phaser.Scene {
-  private selectedDifficulty: Difficulty = 'weaver';
-  private difficultyButtons: Map<Difficulty, Phaser.GameObjects.Container> = new Map();
   private bubbles: Phaser.GameObjects.Arc[] = [];
-  private walletStatusText?: Phaser.GameObjects.Text;
-  private walletConnected: boolean = false;
-  
-  constructor() {
-    super('MainMenu');
-  }
-  
   private backgroundCycleIndex: number = 0;
   private backgroundImage?: Phaser.GameObjects.Image;
   private backgroundImageNext?: Phaser.GameObjects.Image; // Second image for cross-fade
@@ -40,218 +36,35 @@ export class MainMenu extends Phaser.Scene {
     'bg_6911',
     'bg_6912'
   ];
+  private testModePanel?: Phaser.GameObjects.Container;
   
-  async create(): Promise<void> {
-    const centerX = GAME.ARENA_WIDTH / 2;
-    
-    // Initialize BSV wallet (non-blocking, can fail gracefully)
-    this.initializeBSVWallet();
-    
-    // Create cycling background with actual images
-    this.createCyclingBackground();
-    
-    // Floating bubbles in background
-    this.createBubbles();
-    
-    // Title with bubbly style
-    const title = this.add.text(centerX, 70, 'SPECTRAL QUEST', {
-      fontSize: '44px',
-      fontFamily: 'Arial Rounded MT Bold, Helvetica, Arial, sans-serif',
-      color: '#ffffff',
-      stroke: '#6644aa',
-      strokeThickness: 6
-    });
-    title.setOrigin(0.5);
-    
-    // Rainbow shimmer on title
-    this.tweens.addCounter({
-      from: 0,
-      to: 360,
-      duration: 3000,
-      repeat: -1,
-      onUpdate: (tween) => {
-        const hue = tween.getValue();
-        const color = Phaser.Display.Color.HSLToColor(hue / 360, 0.7, 0.8);
-        title.setTint(color.color);
-      }
-    });
-    
-    // Subtitle
-    this.add.text(centerX, 120, '✨ Rainbow Craft ✨', {
-      fontSize: '22px',
-      fontFamily: 'Arial, sans-serif',
-      color: '#bbaadd',
-      fontStyle: 'italic'
-    }).setOrigin(0.5);
-    
-    // Difficulty section label
-    this.add.text(centerX, 175, 'Choose Your Challenge', {
-      fontSize: '16px',
-      color: '#8888aa'
-    }).setOrigin(0.5);
-    
-    // ROUNDED difficulty buttons
-    const difficulties: Difficulty[] = ['dreamer', 'weaver', 'dancer', 'master'];
-    const buttonWidth = 160;
-    const buttonSpacing = 15;
-    const totalWidth = difficulties.length * buttonWidth + (difficulties.length - 1) * buttonSpacing;
-    const startX = centerX - totalWidth / 2 + buttonWidth / 2;
-    
-    difficulties.forEach((diff, index) => {
-      const x = startX + index * (buttonWidth + buttonSpacing);
-      const button = this.createRoundedButton(x, 245, diff);
-      this.difficultyButtons.set(diff, button);
-    });
-    
-    // Highlight default
-    this.selectDifficulty('weaver');
-    
-    // BIG ROUNDED START BUTTON
-    const startButton = this.createStartButton(centerX, 380);
-    
-    // Controls info with rounded pill background
-    const controlsBg = this.add.graphics();
-    controlsBg.fillStyle(0x000000, 0.3);
-    controlsBg.fillRoundedRect(centerX - 200, 470, 400, 35, 17);
-    
-    this.add.text(centerX, 487, 'WASD: Move  •  Space: Shoot  •  Mouse: Aim', {
-      fontSize: '13px',
-      color: '#aaaacc'
-    }).setOrigin(0.5);
-    
-    // Wallet button - rounded pill
-    const walletButton = this.createPillButton(centerX, 540, '🔗 Connect Wallet', 0x3366aa);
-    walletButton.on('pointerdown', async () => {
-      await this.handleWalletConnection();
-    });
-    
-    // Wallet status text (updates dynamically)
-    this.walletStatusText = this.add.text(centerX, 580, '🔗 Wallet: Not Connected', {
-      fontSize: '12px',
-      color: '#ff8888'
-    }).setOrigin(0.5);
-    
-    // Version
-    this.add.text(GAME.ARENA_WIDTH - 15, GAME.VIEWPORT_HEIGHT - 15, 'v0.1.0', {
-      fontSize: '11px',
-      color: '#555577'
-    }).setOrigin(1, 1);
-    
-    // TEST MODE: Level selector (press T to toggle)
-    this.createTestModeSelector(centerX);
-    
-    // Keyboard shortcut for test mode
-    const keyT = this.input.keyboard?.addKey(Phaser.Input.Keyboard.KeyCodes.T);
-    keyT?.on('down', () => {
-      const testMode = this.children.getByName('testModeContainer');
-      if (testMode) {
-        testMode.setVisible(!testMode.visible);
-      }
-    });
+  constructor() {
+    super('MainMenu');
   }
   
-  private createTestModeSelector(centerX: number): void {
-    const container = this.add.container(centerX, 300);
-    container.setName('testModeContainer');
-    container.setVisible(false); // Hidden by default, press T to show
+  create(): void {
+    // Show the HTML menu overlay
+    const overlay = document.getElementById('game-menu-overlay');
+    if (overlay) {
+      overlay.style.display = 'flex';
+    }
     
-    // Background
-    const bg = this.add.graphics();
-    bg.fillStyle(0x000000, 0.8);
-    bg.fillRoundedRect(-200, -120, 400, 240, 20);
-    bg.lineStyle(3, 0xffff00, 0.8);
-    bg.strokeRoundedRect(-200, -120, 400, 240, 20);
+    // Create cycling background
+    this.createCyclingBackground();
     
-    // Title
-    const title = this.add.text(0, -100, '🧪 TEST MODE 🧪', {
-      fontSize: '20px',
-      color: '#ffff00',
-      fontFamily: 'Arial Rounded MT Bold, Arial, sans-serif',
-      fontStyle: 'bold'
-    }).setOrigin(0.5);
+    // Create floating bubbles
+    this.createBubbles();
     
-    const subtitle = this.add.text(0, -70, 'Select Level to Test', {
-      fontSize: '14px',
-      color: '#aaaaaa'
-    }).setOrigin(0.5);
+    // Setup HTML menu buttons
+    this.setupHTMLMenu();
     
-    // Level buttons (2 rows of 4)
-    const levelNames = [
-      'Crimson', 'Amber', 'Yellow', 'Green',
-      'Blue', 'Indigo', 'Violet', 'All'
-    ];
-    const levelKeys = [
-      'CrimsonLevel', 'AmberLevel', 'YellowLevel', 'GreenLevel',
-      'BlueLevel', 'IndigoLevel', 'VioletLevel', null
-    ];
+    // Setup test mode toggle (press T)
+    this.setupTestMode();
     
-    const buttonWidth = 80;
-    const buttonHeight = 35;
-    const spacing = 15;
-    const startX = -((buttonWidth + spacing) * 2 - spacing) / 2;
-    
-    levelNames.forEach((name, index) => {
-      const row = Math.floor(index / 4);
-      const col = index % 4;
-      const x = startX + col * (buttonWidth + spacing);
-      const y = -30 + row * (buttonHeight + spacing);
-      
-      const buttonBg = this.add.graphics();
-      buttonBg.fillStyle(0x333333, 1);
-      buttonBg.fillRoundedRect(x - buttonWidth/2, y - buttonHeight/2, buttonWidth, buttonHeight, 8);
-      buttonBg.lineStyle(2, 0x666666, 1);
-      buttonBg.strokeRoundedRect(x - buttonWidth/2, y - buttonHeight/2, buttonWidth, buttonHeight, 8);
-      
-      const buttonText = this.add.text(x, y, name, {
-        fontSize: '12px',
-        color: '#ffffff',
-        fontFamily: 'Arial, sans-serif'
-      }).setOrigin(0.5);
-      
-      const hitArea = this.add.rectangle(x, y, buttonWidth, buttonHeight, 0x000000, 0);
-      hitArea.setInteractive({ useHandCursor: true });
-      
-      hitArea.on('pointerover', () => {
-        buttonBg.clear();
-        buttonBg.fillStyle(0x555555, 1);
-        buttonBg.fillRoundedRect(x - buttonWidth/2, y - buttonHeight/2, buttonWidth, buttonHeight, 8);
-        buttonBg.lineStyle(2, 0x888888, 1);
-        buttonBg.strokeRoundedRect(x - buttonWidth/2, y - buttonHeight/2, buttonWidth, buttonHeight, 8);
-      });
-      
-      hitArea.on('pointerout', () => {
-        buttonBg.clear();
-        buttonBg.fillStyle(0x333333, 1);
-        buttonBg.fillRoundedRect(x - buttonWidth/2, y - buttonHeight/2, buttonWidth, buttonHeight, 8);
-        buttonBg.lineStyle(2, 0x666666, 1);
-        buttonBg.strokeRoundedRect(x - buttonWidth/2, y - buttonHeight/2, buttonWidth, buttonHeight, 8);
-      });
-      
-      hitArea.on('pointerdown', () => {
-        if (levelKeys[index] === null) {
-          // "All" - start from level 1
-          useGameStore.getState().startLevel(0);
-          this.scene.start('CrimsonLevel');
-        } else {
-          // Jump to specific level
-          const levelIndex = index;
-          useGameStore.getState().startLevel(levelIndex);
-          this.scene.start(levelKeys[index]!);
-        }
-      });
-      
-      container.add([buttonBg, buttonText, hitArea]);
-    });
-    
-    // Hint text
-    const hint = this.add.text(0, 80, 'Press T to toggle test mode', {
-      fontSize: '11px',
-      color: '#888888',
-      fontStyle: 'italic'
-    }).setOrigin(0.5);
-    
-    container.add([bg, title, subtitle, hint]);
-    container.setDepth(1000);
+    // Initialize test mode flag
+    if (typeof window !== 'undefined') {
+      window.TEST_MODE = false;
+    }
   }
   
   private createCyclingBackground(): void {
@@ -266,24 +79,19 @@ export class MainMenu extends Phaser.Scene {
       return;
     }
     
+    const centerX = GAME.ARENA_WIDTH / 2;
+    const centerY = GAME.VIEWPORT_HEIGHT / 2;
+    
     // Create TWO overlapping images for cross-fade (no black gap)
     // Current image - fully visible
-    this.backgroundImage = this.add.image(
-      GAME.ARENA_WIDTH / 2,
-      GAME.VIEWPORT_HEIGHT / 2,
-      firstKey
-    );
+    this.backgroundImage = this.add.image(centerX, centerY, firstKey);
     this.setImageToCoverViewport(this.backgroundImage, GAME.ARENA_WIDTH, GAME.VIEWPORT_HEIGHT);
     this.backgroundImage.setDepth(-100);
     this.backgroundImage.setAlpha(1);
     
     // Next image - hidden, ready for cross-fade
     const secondKey = this.backgroundImageKeys[1];
-    this.backgroundImageNext = this.add.image(
-      GAME.ARENA_WIDTH / 2,
-      GAME.VIEWPORT_HEIGHT / 2,
-      secondKey
-    );
+    this.backgroundImageNext = this.add.image(centerX, centerY, secondKey);
     this.setImageToCoverViewport(this.backgroundImageNext, GAME.ARENA_WIDTH, GAME.VIEWPORT_HEIGHT);
     this.backgroundImageNext.setDepth(-101); // Behind current
     this.backgroundImageNext.setAlpha(0); // Hidden
@@ -294,10 +102,9 @@ export class MainMenu extends Phaser.Scene {
     overlay.fillRect(0, 0, GAME.ARENA_WIDTH, GAME.VIEWPORT_HEIGHT);
     overlay.setDepth(-99);
     
-    // Cycle through images every 8 seconds (104s total / 13 = 8s each)
-    // Match CSS timing: 0%, 6%, 12%, 18%, 24%, 30%, 36%, 42%, 48%, 54%, 60%, 66%, 72%
+    // Cycle through images every 4 seconds with smooth cross-fade
     this.time.addEvent({
-      delay: 8000, // 8 seconds per image (104s / 13 = 8s)
+      delay: 4000, // 4 seconds per image
       callback: () => {
         this.backgroundCycleIndex = (this.backgroundCycleIndex + 1) % this.backgroundImageKeys.length;
         const nextKey = this.backgroundImageKeys[this.backgroundCycleIndex];
@@ -320,14 +127,14 @@ export class MainMenu extends Phaser.Scene {
           this.tweens.add({
             targets: this.backgroundImage,
             alpha: 0,
-            duration: 2000, // 2 second cross-fade
+            duration: 4000, // 4 second cross-fade (smooth)
             ease: 'Sine.easeInOut'
           });
           
           this.tweens.add({
             targets: this.backgroundImageNext,
             alpha: 1,
-            duration: 2000, // 2 second cross-fade
+            duration: 4000, // 4 second cross-fade (smooth)
             ease: 'Sine.easeInOut',
             onComplete: () => {
               // Swap: current becomes next, next becomes current
@@ -345,232 +152,6 @@ export class MainMenu extends Phaser.Scene {
       callbackScope: this,
       loop: true
     });
-  }
-  
-  private createBubbles(): void {
-    const colors = [0xff6b9d, 0xffa06b, 0xffd93d, 0x6bcf6b, 0x6bb5ff, 0x9b6bff, 0xff6bdb];
-    
-    // Create more bubbles with bubbles inside
-    for (let i = 0; i < 35; i++) {
-      const x = Phaser.Math.Between(30, GAME.ARENA_WIDTH - 30);
-      const y = Phaser.Math.Between(30, GAME.VIEWPORT_HEIGHT - 30);
-      const radius = Phaser.Math.Between(15, 45);
-      const color = colors[i % colors.length];
-      
-      // Outer bubble
-      const bubble = this.add.circle(x, y, radius, color, 0.2);
-      const shine = this.add.circle(x - radius * 0.3, y - radius * 0.3, radius * 0.2, 0xffffff, 0.4);
-      
-      // Inner bubble (bubble within bubble)
-      const innerRadius = radius * 0.6;
-      const innerBubble = this.add.circle(x, y, innerRadius, color, 0.15);
-      const innerShine = this.add.circle(x - innerRadius * 0.3, y - innerRadius * 0.3, innerRadius * 0.2, 0xffffff, 0.3);
-      
-      // Tiny bubble inside inner bubble
-      const tinyRadius = innerRadius * 0.5;
-      const tinyBubble = this.add.circle(x + radius * 0.2, y + radius * 0.2, tinyRadius, color, 0.25);
-      
-      this.bubbles.push(bubble);
-      
-      // Float animation - all bubbles together
-      const floatDuration = Phaser.Math.Between(3000, 6000);
-      this.tweens.add({
-        targets: [bubble, shine, innerBubble, innerShine, tinyBubble],
-        y: y - Phaser.Math.Between(20, 50),
-        x: x + Phaser.Math.Between(-20, 20),
-        duration: floatDuration,
-        yoyo: true,
-        repeat: -1,
-        ease: 'Sine.easeInOut'
-      });
-      
-      // Gentle pulse on inner bubbles
-      this.tweens.add({
-        targets: [innerBubble, tinyBubble],
-        scaleX: 1.1,
-        scaleY: 1.1,
-        duration: floatDuration * 0.8,
-        yoyo: true,
-        repeat: -1,
-        ease: 'Sine.easeInOut'
-      });
-    }
-  }
-  
-  private createRoundedButton(x: number, y: number, difficulty: Difficulty): Phaser.GameObjects.Container {
-    const config = DIFFICULTIES[difficulty];
-    const container = this.add.container(x, y);
-    
-    // Glassmorphism background with cycling effect
-    const bg = this.add.graphics();
-    this.createGlassmorphismButton(bg, -75, -45, 150, 90, 20);
-    
-    const nameText = this.add.text(0, -15, config.name, {
-      fontSize: '18px',
-      color: '#ffffff',
-      fontFamily: 'Arial Rounded MT Bold, Arial, sans-serif',
-      fontStyle: 'bold'
-    }).setOrigin(0.5);
-    
-    const descText = this.add.text(0, 15, config.description, {
-      fontSize: '10px',
-      color: '#aaaacc',
-      align: 'center',
-      wordWrap: { width: 130 }
-    }).setOrigin(0.5);
-    
-    container.add([bg, nameText, descText]);
-    container.setInteractive(new Phaser.Geom.Rectangle(-75, -45, 150, 90), Phaser.Geom.Rectangle.Contains);
-    
-    // Store for selection highlighting
-    (container as any).bgGraphics = bg;
-    (container as any).nameText = nameText;
-    
-    // Update button background on cycle
-    this.time.addEvent({
-      delay: 8000,
-      callback: () => {
-        if (this.selectedDifficulty !== difficulty) {
-          bg.clear();
-          this.createGlassmorphismButton(bg, -75, -45, 150, 90, 20);
-        }
-      },
-      callbackScope: this,
-      loop: true
-    });
-    
-    container.on('pointerover', () => {
-      if (this.selectedDifficulty !== difficulty) {
-        this.tweens.add({ targets: container, scaleX: 1.05, scaleY: 1.05, duration: 100 });
-      }
-    });
-    
-    container.on('pointerout', () => {
-      if (this.selectedDifficulty !== difficulty) {
-        this.tweens.add({ targets: container, scaleX: 1, scaleY: 1, duration: 100 });
-      }
-    });
-    
-    container.on('pointerdown', () => {
-      this.selectDifficulty(difficulty);
-    });
-    
-    return container;
-  }
-  
-  private createGlassmorphismButton(graphics: Phaser.GameObjects.Graphics, x: number, y: number, width: number, height: number, radius: number): void {
-    // Base glassmorphism background (semi-transparent dark)
-    graphics.fillStyle(0x000000, 0.5);
-    graphics.fillRoundedRect(x, y, width, height, radius);
-    
-    // Cycling background effect (simulated with gradient)
-    const cycleColor = this.getCurrentCycleColor();
-    graphics.fillStyle(cycleColor, 0.3);
-    graphics.fillRoundedRect(x + 2, y + 2, width - 4, height - 4, radius - 2);
-    
-    // Border with glow
-    graphics.lineStyle(2, 0x667eea, 0.6);
-    graphics.strokeRoundedRect(x, y, width, height, radius);
-    
-    // Inner highlight
-    graphics.fillStyle(0xffffff, 0.1);
-    graphics.fillRoundedRect(x + 2, y + 2, width - 4, height * 0.3, radius - 2);
-  }
-  
-  private getCurrentCycleColor(): number {
-    // Get current cycle color based on index (matching the image sequence)
-    // These colors are extracted from the actual images for button accents
-    const colors = [
-      0x8B4513, // HummingBow - brown/tan
-      0x2F4F4F, // IMG_6794 - dark slate
-      0x556B2F, // IMG_6795 - olive
-      0x483D8B, // IMG_6796 - dark slate blue
-      0x8B008B, // IMG_6797 - dark magenta
-      0x191970, // TunnelBow - midnight blue
-      0x2E8B57, // IMG_6906 - sea green
-      0x8B4513, // IMG_6907 - sienna
-      0x4B0082, // IMG_6908 - indigo
-      0x800080, // IMG_6909 - purple
-      0x2F4F4F, // IMG_6910 - slate gray
-      0x556B2F, // IMG_6911 - dark olive
-      0x8B4513  // IMG_6912 - saddle brown
-    ];
-    return colors[this.backgroundCycleIndex % colors.length];
-  }
-  
-  private createStartButton(x: number, y: number): Phaser.GameObjects.Container {
-    const container = this.add.container(x, y);
-    
-    // Large rounded button with glassmorphism
-    const bg = this.add.graphics();
-    this.createGlassmorphismButton(bg, -110, -35, 220, 70, 35);
-    
-    // Additional gradient overlay for depth
-    const cycleColor = this.getCurrentCycleColor();
-    bg.fillStyle(cycleColor, 0.4);
-    bg.fillRoundedRect(-105, -32, 210, 35, 30);
-    
-    const text = this.add.text(0, 0, 'START', {
-      fontSize: '32px',
-      color: '#ffffff',
-      fontFamily: 'Arial Rounded MT Bold, Arial, sans-serif',
-      fontStyle: 'bold'
-    }).setOrigin(0.5);
-    
-    container.add([bg, text]);
-    container.setInteractive(new Phaser.Geom.Rectangle(-110, -35, 220, 70), Phaser.Geom.Rectangle.Contains);
-    
-    // Hover effects
-    container.on('pointerover', () => {
-      this.tweens.add({ targets: container, scaleX: 1.08, scaleY: 1.08, duration: 100 });
-    });
-    
-    container.on('pointerout', () => {
-      this.tweens.add({ targets: container, scaleX: 1, scaleY: 1, duration: 100 });
-    });
-    
-    container.on('pointerdown', () => {
-      this.startGame();
-    });
-    
-    // Gentle pulse
-    this.tweens.add({
-      targets: container,
-      scaleX: 1.03,
-      scaleY: 1.03,
-      duration: 800,
-      yoyo: true,
-      repeat: -1,
-      ease: 'Sine.easeInOut'
-    });
-    
-    return container;
-  }
-  
-  private createPillButton(x: number, y: number, label: string, color: number): Phaser.GameObjects.Container {
-    const container = this.add.container(x, y);
-    
-    const bg = this.add.graphics();
-    bg.fillStyle(color, 0.8);
-    bg.fillRoundedRect(-90, -18, 180, 36, 18);
-    
-    const text = this.add.text(0, 0, label, {
-      fontSize: '14px',
-      color: '#ffffff'
-    }).setOrigin(0.5);
-    
-    container.add([bg, text]);
-    container.setInteractive(new Phaser.Geom.Rectangle(-90, -18, 180, 36), Phaser.Geom.Rectangle.Contains);
-    
-    container.on('pointerover', () => {
-      this.tweens.add({ targets: container, scaleX: 1.05, scaleY: 1.05, duration: 100 });
-    });
-    
-    container.on('pointerout', () => {
-      this.tweens.add({ targets: container, scaleX: 1, scaleY: 1, duration: 100 });
-    });
-    
-    return container;
   }
   
   /**
@@ -591,178 +172,280 @@ export class MainMenu extends Phaser.Scene {
     image.setDisplaySize(sourceWidth * scale, sourceHeight * scale);
   }
   
-  private selectDifficulty(difficulty: Difficulty): void {
-    // Update all buttons
-    this.difficultyButtons.forEach((container, diff) => {
-      const bg = (container as any).bgGraphics as Phaser.GameObjects.Graphics;
-      const nameText = (container as any).nameText as Phaser.GameObjects.Text;
-      
-      bg.clear();
-      
-      if (diff === difficulty) {
-        // Selected - bright, highlighted with glassmorphism
-        const cycleColor = this.getCurrentCycleColor();
-        bg.fillStyle(0x000000, 0.7);
-        bg.fillRoundedRect(-75, -45, 150, 90, 20);
-        bg.fillStyle(cycleColor, 0.5);
-        bg.fillRoundedRect(-73, -43, 146, 86, 18);
-        bg.lineStyle(4, 0x667eea, 1);
-        bg.strokeRoundedRect(-75, -45, 150, 90, 20);
-        nameText.setColor('#ffffff');
-        container.setScale(1.05);
-      } else {
-        // Unselected - dim glassmorphism
-        this.createGlassmorphismButton(bg, -75, -45, 150, 90, 20);
-        nameText.setColor('#aaaaaa');
-        container.setScale(1);
-      }
-    });
+  private createBubbles(): void {
+    const rainbowColors = [0xff6b6b, 0xffa06b, 0xffd93d, 0x6bcf6b, 0x6bb5ff, 0x9b6bff, 0xff6bdb];
     
-    this.selectedDifficulty = difficulty;
+    // Create more bubbles with bubble-within-bubble effect (like splash page)
+    for (let i = 0; i < 50; i++) {
+      const x = Phaser.Math.Between(50, GAME.ARENA_WIDTH - 50);
+      const y = Phaser.Math.Between(50, GAME.VIEWPORT_HEIGHT - 50);
+      const radius = Phaser.Math.Between(15, 50);
+      const color = rainbowColors[i % rainbowColors.length];
+      
+      // Outer bubble (main bubble)
+      const bubble = this.add.circle(x, y, radius, color, 0.2);
+      bubble.setDepth(-50);
+      
+      // Inner bubble (bubble within bubble)
+      const innerRadius = radius * 0.6;
+      const innerBubble = this.add.circle(x, y, innerRadius, color, 0.3);
+      innerBubble.setDepth(-49);
+      
+      // Tiny bubble inside inner bubble
+      const tinyRadius = innerRadius * 0.5;
+      const tinyBubble = this.add.circle(x + radius * 0.2, y + radius * 0.2, tinyRadius, color, 0.4);
+      tinyBubble.setDepth(-48);
+      
+      // Shine/highlight effect
+      const shine = this.add.circle(x - radius * 0.3, y - radius * 0.3, radius * 0.2, 0xffffff, 0.5);
+      shine.setDepth(-47);
+      
+      this.bubbles.push(bubble);
+      
+      // Float animation - longer loops with varied timing
+      const duration = Phaser.Math.Between(5000, 9000); // Longer loops (5-9 seconds)
+      const delay = Phaser.Math.Between(0, 2000);
+      
+      this.tweens.add({
+        targets: [bubble, innerBubble, tinyBubble, shine],
+        y: y - Phaser.Math.Between(30, 80),
+        x: x + Phaser.Math.Between(-30, 30),
+        duration: duration,
+        delay: delay,
+        yoyo: true,
+        repeat: -1,
+        ease: 'Sine.easeInOut'
+      });
+      
+      // Gentle scale pulse on inner bubbles
+      this.tweens.add({
+        targets: [innerBubble, tinyBubble],
+        scaleX: 1.15,
+        scaleY: 1.15,
+        duration: duration * 0.7,
+        delay: delay,
+        yoyo: true,
+        repeat: -1,
+        ease: 'Sine.easeInOut'
+      });
+      
+      // Shine twinkle effect
+      this.tweens.add({
+        targets: shine,
+        alpha: 0.2,
+        duration: 800,
+        delay: Phaser.Math.Between(0, 1000),
+        yoyo: true,
+        repeat: -1,
+        ease: 'Sine.easeInOut'
+      });
+      
+      // Outer bubble gentle pulse
+      this.tweens.add({
+        targets: bubble,
+        scaleX: 1.1,
+        scaleY: 1.1,
+        duration: duration * 0.9,
+        delay: delay,
+        yoyo: true,
+        repeat: -1,
+        ease: 'Sine.easeInOut'
+      });
+    }
   }
   
-  private startGame(): void {
-    useGameStore.getState().startNewRun(this.selectedDifficulty);
+  private setupHTMLMenu(): void {
+    // Get difficulty buttons from HTML
+    const difficultyButtons = document.querySelectorAll('.difficulty-btn');
+    difficultyButtons.forEach((button) => {
+      button.addEventListener('click', (e) => {
+        const target = e.target as HTMLElement;
+        const difficulty = target.getAttribute('data-difficulty') || 'weaver';
+        
+        // Remove active class from all buttons
+        difficultyButtons.forEach((btn) => btn.classList.remove('active'));
+        // Add active class to clicked button
+        target.classList.add('active');
+        
+        // Store difficulty in game store
+        const store = useGameStore.getState();
+        store.startNewRun(difficulty as 'dreamer' | 'weaver' | 'dancer' | 'master');
+        
+        console.log(`Difficulty selected: ${difficulty}`);
+      });
+    });
     
-    // Fade transition
-    this.cameras.main.fadeOut(300, 0, 0, 0);
-    this.cameras.main.once('camerafadeoutcomplete', () => {
-      this.scene.start('CrimsonLevel');
+    // Set default difficulty (Weaver) as active if none selected
+    const hasActive = document.querySelector('.difficulty-btn.active');
+    if (!hasActive) {
+      const weaverButton = document.querySelector('[data-difficulty="weaver"]');
+      if (weaverButton) {
+        weaverButton.classList.add('active');
+      }
+    }
+    
+    // START button
+    const startButton = document.getElementById('start-btn');
+    if (startButton) {
+      startButton.addEventListener('click', () => {
+        const store = useGameStore.getState();
+        
+        // Get selected difficulty (default to weaver if none selected)
+        const selectedButton = document.querySelector('.difficulty-btn.active');
+        const difficulty = selectedButton 
+          ? (selectedButton.getAttribute('data-difficulty') || 'weaver')
+          : 'weaver';
+        
+        store.startNewRun(difficulty as 'dreamer' | 'weaver' | 'dancer' | 'master');
+        
+        // Hide the HTML menu overlay
+        const overlay = document.getElementById('game-menu-overlay');
+        if (overlay) {
+          overlay.style.display = 'none';
+        }
+        
+        // Start first level
+        this.scene.start('CrimsonLevel');
+      });
+    }
+    
+    // Wallet button (placeholder)
+    const walletButton = document.getElementById('wallet-btn');
+    if (walletButton) {
+      walletButton.addEventListener('click', () => {
+        console.log('Wallet button clicked (placeholder)');
+        // TODO: Implement wallet connection
+      });
+    }
+  }
+  
+  private setupTestMode(): void {
+    // Listen for T key to toggle test mode
+    this.input.keyboard?.on('keydown-T', () => {
+      if (typeof window !== 'undefined') {
+        window.TEST_MODE = !window.TEST_MODE;
+        this.toggleTestModePanel();
+        console.log(`Test mode: ${window.TEST_MODE ? 'ON' : 'OFF'}`);
+      }
     });
   }
-
-  /**
-   * INITIALIZE BSV WALLET
-   * 
-   * Attempts to connect to wallet on scene load
-   * Fails gracefully if wallet not available
-   */
-  private async initializeBSVWallet(): Promise<void> {
-    try {
-      console.log('[MainMenu] Initializing BSV wallet...');
-      
-      const wallet = await initializeWallet({
-        network: BSV_CONFIG.NETWORK,
-        appName: BSV_CONFIG.APP_NAME,
-        appIcon: BSV_CONFIG.APP_ICON
-      });
-
-      this.walletConnected = true;
-      const identityKey = wallet.getIdentityKey();
-      
-      console.log(`[MainMenu] ✅ Wallet connected!`);
-      console.log(`[MainMenu] Identity: ${identityKey.slice(0, 16)}...`);
-      
-      // Update UI
-      if (this.walletStatusText) {
-        this.walletStatusText.setText(`🔗 Wallet: Connected (${identityKey.slice(0, 8)}...)`);
-        this.walletStatusText.setColor('#88ff88');
+  
+  private toggleTestModePanel(): void {
+    if (!window.TEST_MODE) {
+      // Hide panel
+      if (this.testModePanel) {
+        this.testModePanel.destroy();
+        this.testModePanel = undefined;
       }
-    } catch (error) {
-      console.warn('[MainMenu] ⚠️ Wallet initialization failed:', error);
-      console.log('[MainMenu] Game will continue without blockchain features');
-      
-      // Update UI to show disconnected state
-      if (this.walletStatusText) {
-        this.walletStatusText.setText('🔗 Wallet: Not Connected (Click to connect)');
-        this.walletStatusText.setColor('#ff8888');
-      }
-      
-      this.walletConnected = false;
+      return;
     }
-  }
-
-  /**
-   * HANDLE WALLET CONNECTION
-   * 
-   * Called when user clicks "Connect Wallet" button
-   * Attempts to connect/reconnect wallet
-   */
-  private async handleWalletConnection(): Promise<void> {
-    try {
-      if (this.walletConnected) {
-        // Already connected - show info or disconnect
-        const wallet = getWallet();
-        const identityKey = wallet.getIdentityKey();
-        
-        // Show connection info (could be a modal in future)
-        console.log(`[MainMenu] Wallet already connected: ${identityKey.slice(0, 16)}...`);
-        
-        // For now, just update text
-        if (this.walletStatusText) {
-          this.walletStatusText.setText(`🔗 Wallet: Connected (${identityKey.slice(0, 8)}...)`);
-          this.walletStatusText.setColor('#88ff88');
-        }
-        return;
-      }
-
-      // Not connected - try to connect
-      console.log('[MainMenu] Attempting wallet connection...');
+    
+    // Show panel
+    const centerX = GAME.ARENA_WIDTH / 2;
+    const panelY = 100;
+    
+    // Panel background
+    const panelBg = this.add.graphics();
+    panelBg.fillStyle(0x000000, 0.8);
+    panelBg.fillRoundedRect(centerX - 200, panelY - 30, 400, 300, 15);
+    panelBg.lineStyle(2, 0xffff00, 1);
+    panelBg.strokeRoundedRect(centerX - 200, panelY - 30, 400, 300, 15);
+    
+    // Title
+    const title = this.add.text(centerX, panelY, 'TEST MODE - Select Level', {
+      fontSize: '20px',
+      color: '#ffff00',
+      fontStyle: 'bold'
+    }).setOrigin(0.5);
+    
+    // Level buttons
+    const levelNames = LEVELS.map((level, index) => ({
+      name: level.name,
+      index,
+      key: level.key
+    }));
+    
+    const buttonY = panelY + 40;
+    const buttonsPerRow = 2;
+    const buttonWidth = 150;
+    const buttonHeight = 40;
+    const buttonSpacing = 20;
+    
+    const panelObjects: Phaser.GameObjects.GameObject[] = [panelBg, title];
+    
+    levelNames.forEach((level, i) => {
+      const row = Math.floor(i / buttonsPerRow);
+      const col = i % buttonsPerRow;
+      const x = centerX - (buttonsPerRow - 1) * (buttonWidth + buttonSpacing) / 2 + col * (buttonWidth + buttonSpacing);
+      const y = buttonY + row * (buttonHeight + 10);
       
-      if (this.walletStatusText) {
-        this.walletStatusText.setText('🔗 Connecting...');
-        this.walletStatusText.setColor('#ffaa00');
-      }
-
-      // Reset any existing connection
-      resetWallet();
+      // Button background
+      const btnBg = this.add.graphics();
+      btnBg.fillStyle(0x333333, 0.9);
+      btnBg.fillRoundedRect(x - buttonWidth / 2, y - buttonHeight / 2, buttonWidth, buttonHeight, 8);
+      btnBg.lineStyle(1, levelNames[i].index === 0 ? 0x44ff44 : 0x888888, 1);
+      btnBg.strokeRoundedRect(x - buttonWidth / 2, y - buttonHeight / 2, buttonWidth, buttonHeight, 8);
       
-      // Initialize new connection
-      const wallet = await initializeWallet({
-        network: BSV_CONFIG.NETWORK,
-        appName: BSV_CONFIG.APP_NAME,
-        appIcon: BSV_CONFIG.APP_ICON
-      });
-
-      this.walletConnected = true;
-      const identityKey = wallet.getIdentityKey();
-      
-      console.log(`[MainMenu] ✅ Wallet connected!`);
-      
-      // Update UI
-      if (this.walletStatusText) {
-        this.walletStatusText.setText(`🔗 Wallet: Connected (${identityKey.slice(0, 8)}...)`);
-        this.walletStatusText.setColor('#88ff88');
-      }
-
-      // Show success notification
-      const successText = this.add.text(GAME.ARENA_WIDTH / 2, 520, '✅ Wallet Connected!', {
+      // Button text
+      const btnText = this.add.text(x, y, `${level.index + 1}. ${level.name}`, {
         fontSize: '14px',
-        color: '#88ff88'
+        color: '#ffffff'
       }).setOrigin(0.5);
       
-      this.tweens.add({
-        targets: successText,
-        alpha: 0,
-        y: successText.y - 20,
-        duration: 2000,
-        onComplete: () => successText.destroy()
-      });
-
-    } catch (error) {
-      console.error('[MainMenu] ❌ Wallet connection failed:', error);
+      // Make interactive
+      btnBg.setInteractive(new Phaser.Geom.Rectangle(x - buttonWidth / 2, y - buttonHeight / 2, buttonWidth, buttonHeight), Phaser.Geom.Rectangle.Contains);
+      btnText.setInteractive(new Phaser.Geom.Rectangle(x - buttonWidth / 2, y - buttonHeight / 2, buttonWidth, buttonHeight), Phaser.Geom.Rectangle.Contains);
       
-      // Update UI to show error
-      if (this.walletStatusText) {
-        this.walletStatusText.setText('🔗 Wallet: Connection Failed (Click to retry)');
-        this.walletStatusText.setColor('#ff4444');
-      }
-
-      // Show error notification
-      const errorText = this.add.text(GAME.ARENA_WIDTH / 2, 520, '❌ Wallet Connection Failed', {
-        fontSize: '14px',
-        color: '#ff4444'
-      }).setOrigin(0.5);
+      const onClick = () => {
+        const store = useGameStore.getState();
+        store.startNewRun('weaver');
+        store.startLevel(level.index);
+        
+        // Map level key to scene key
+        const sceneMap: Record<string, string> = {
+          'crimson': 'CrimsonLevel',
+          'amber': 'AmberLevel',
+          'yellow': 'YellowLevel',
+          'green': 'GreenLevel',
+          'blue': 'BlueLevel',
+          'indigo': 'IndigoLevel',
+          'violet': 'VioletLevel'
+        };
+        
+        const sceneKey = sceneMap[level.key] || 'CrimsonLevel';
+        this.scene.start(sceneKey);
+      };
       
-      this.tweens.add({
-        targets: errorText,
-        alpha: 0,
-        y: errorText.y - 20,
-        duration: 2000,
-        onComplete: () => errorText.destroy()
+      btnBg.on('pointerdown', onClick);
+      btnText.on('pointerdown', onClick);
+      
+      btnBg.on('pointerover', () => {
+        btnBg.clear();
+        btnBg.fillStyle(0x444444, 0.9);
+        btnBg.fillRoundedRect(x - buttonWidth / 2, y - buttonHeight / 2, buttonWidth, buttonHeight, 8);
+        btnBg.lineStyle(2, 0xffff00, 1);
+        btnBg.strokeRoundedRect(x - buttonWidth / 2, y - buttonHeight / 2, buttonWidth, buttonHeight, 8);
       });
-
-      this.walletConnected = false;
-    }
+      
+      btnBg.on('pointerout', () => {
+        btnBg.clear();
+        btnBg.fillStyle(0x333333, 0.9);
+        btnBg.fillRoundedRect(x - buttonWidth / 2, y - buttonHeight / 2, buttonWidth, buttonHeight, 8);
+        btnBg.lineStyle(1, levelNames[i].index === 0 ? 0x44ff44 : 0x888888, 1);
+        btnBg.strokeRoundedRect(x - buttonWidth / 2, y - buttonHeight / 2, buttonWidth, buttonHeight, 8);
+      });
+      
+      panelObjects.push(btnBg, btnText);
+    });
+    
+    // Close button
+    const closeBtn = this.add.text(centerX, panelY + 250, 'Press T to close', {
+      fontSize: '14px',
+      color: '#888888'
+    }).setOrigin(0.5);
+    panelObjects.push(closeBtn);
+    
+    // Create container (just for organization, doesn't affect functionality)
+    this.testModePanel = this.add.container(0, 0, panelObjects);
   }
 }

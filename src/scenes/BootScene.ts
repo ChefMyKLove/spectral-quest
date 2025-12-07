@@ -167,10 +167,9 @@ export class BootScene extends Phaser.Scene {
     this.backgroundImageNext.setDepth(-101); // Behind current
     this.backgroundImageNext.setAlpha(0); // Hidden
     
-    // Cycle through images every 8 seconds (104s total / 13 = 8s each)
-    // Match CSS timing: 0%, 6%, 12%, 18%, 24%, 30%, 36%, 42%, 48%, 54%, 60%, 66%, 72%
+    // Cycle through images every 4 seconds (half the original time)
     this.time.addEvent({
-      delay: 8000, // 8 seconds per image (104s / 13 = 8s)
+      delay: 4000, // 4 seconds per image (half of original 8s)
       callback: () => {
         this.backgroundCycleIndex = (this.backgroundCycleIndex + 1) % this.backgroundImageKeys.length;
         const nextKey = this.backgroundImageKeys[this.backgroundCycleIndex];
@@ -193,14 +192,14 @@ export class BootScene extends Phaser.Scene {
           this.tweens.add({
             targets: this.backgroundImage,
             alpha: 0,
-            duration: 2000, // 2 second cross-fade
+            duration: 4000, // 4 second cross-fade (more pronounced)
             ease: 'Sine.easeInOut'
           });
           
           this.tweens.add({
             targets: this.backgroundImageNext,
             alpha: 1,
-            duration: 2000, // 2 second cross-fade
+            duration: 4000, // 4 second cross-fade (more pronounced)
             ease: 'Sine.easeInOut',
             onComplete: () => {
               // Swap: current becomes next, next becomes current
@@ -241,8 +240,8 @@ export class BootScene extends Phaser.Scene {
   private createBubbles(): void {
     const rainbowColors = [0xff6b6b, 0xffa06b, 0xffd93d, 0x6bcf6b, 0x6bb5ff, 0x9b6bff, 0xff6bdb];
     
-    // Create 30 floating bubbles
-    for (let i = 0; i < 30; i++) {
+    // Create 40 floating bubbles
+    for (let i = 0; i < 40; i++) {
       const x = Phaser.Math.Between(50, GAME.ARENA_WIDTH - 50);
       const y = Phaser.Math.Between(50, GAME.VIEWPORT_HEIGHT - 50);
       const radius = Phaser.Math.Between(8, 25);
@@ -303,23 +302,38 @@ export class BootScene extends Phaser.Scene {
     this.progressRing.arc(x, y, radius, 0, Math.PI * 2);
     this.progressRing.strokePath();
     
-    // Progress ring with rainbow gradient
+    // Progress ring with rainbow gradient (draw multiple segments for smooth gradient)
     if (progress > 0) {
-      const hue = (progress * 360) % 360;
-      const color = Phaser.Display.Color.HSLToColor(hue / 360, 1, 0.6).color;
+      const segments = Math.max(8, Math.floor(progress * 32)); // More segments = smoother gradient
+      const angleStep = (Math.PI * 2 * progress) / segments;
+      const startAngle = -Math.PI / 2;
       
-      this.progressRing.lineStyle(8, color, 1);
-      this.progressRing.beginPath();
-      this.progressRing.arc(x, y, radius, -Math.PI / 2, -Math.PI / 2 + (Math.PI * 2 * progress));
-      this.progressRing.strokePath();
+      for (let i = 0; i < segments; i++) {
+        const segmentStart = startAngle + (angleStep * i);
+        const segmentEnd = startAngle + (angleStep * (i + 1));
+        
+        // Calculate hue for this segment (rainbow: 0-360)
+        const segmentProgress = i / segments;
+        const hue = (segmentProgress * 360) % 360;
+        const color = Phaser.Display.Color.HSLToColor(hue / 360, 1, 0.6).color;
+        
+        this.progressRing.lineStyle(8, color, 1);
+        this.progressRing.beginPath();
+        this.progressRing.arc(x, y, radius, segmentStart, segmentEnd);
+        this.progressRing.strokePath();
+      }
       
-      // Glowing end cap
+      // Glowing end cap (white)
       const endAngle = -Math.PI / 2 + (Math.PI * 2 * progress);
       const endX = x + Math.cos(endAngle) * radius;
       const endY = y + Math.sin(endAngle) * radius;
       
-      this.progressRing.fillStyle(0xffffff, 0.8);
+      this.progressRing.fillStyle(0xffffff, 0.9);
       this.progressRing.fillCircle(endX, endY, 6);
+      
+      // Outer glow on end cap
+      this.progressRing.fillStyle(0xffffff, 0.3);
+      this.progressRing.fillCircle(endX, endY, 10);
     }
     
     // Center percentage text

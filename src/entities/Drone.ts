@@ -432,8 +432,19 @@ export class HostileDrone extends BaseDrone {
     const motesToSteal = Math.min(2, store.motesCollected);
     
     if (motesToSteal > 0) {
-      store.dropMotes(motesToSteal);
+      // Drop motes and get their IDs
+      const droppedMoteIds = store.dropMotes(motesToSteal);
       this.stolenMotes = Math.min(this.maxStolenMotes, this.stolenMotes + motesToSteal);
+      
+      // Emit event to respawn dropped motes immediately with their IDs
+      this.scene.events.emit('droneDroppedMotes', {
+        x: this.x,
+        y: this.y,
+        count: motesToSteal,
+        moteIds: droppedMoteIds
+      });
+      
+      console.log(`[HostileDrone] Stole ${motesToSteal} motes, respawning at (${this.x}, ${this.y})`);
     }
     
     // Visual attack effect
@@ -476,12 +487,15 @@ export class HostileDrone extends BaseDrone {
     }
     
     // Drop stolen motes as collectible items
-    // (The scene will handle respawning these motes)
+    // When drone is destroyed, we need to find which motes it stole
+    // For now, just emit with count - the handler will find recently dropped motes
     this.scene.events.emit('droneDroppedMotes', {
       x: this.x,
       y: this.y,
       count: this.stolenMotes
     });
+    
+    console.log(`[HostileDrone] Destroyed, dropping ${this.stolenMotes} stolen motes at (${this.x}, ${this.y})`);
     
     this.destroy();
   }
