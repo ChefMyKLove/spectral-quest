@@ -48,5 +48,39 @@ export class MenuScene extends Phaser.Scene {
         button.setStyle({ backgroundColor: '#333333' });
       });
     });
+
+    // Difficulty selection UI
+    this.add.text(400, 500, 'Select Difficulty', {
+      fontSize: '28px',
+      color: '#00FFFF'
+    }).setOrigin(0.5);
+
+    const difficulties = [
+      { key: 'dreamer', name: 'Dreamer' },
+      { key: 'weaver', name: 'Weaver' },
+      { key: 'dancer', name: 'Dancer' },
+      { key: 'master', name: 'Master' }
+    ];
+
+    difficulties.forEach((diff, idx) => {
+      const y = 550 + idx * 50;
+      const diffButton = this.add.text(400, y, diff.name, {
+        fontSize: '22px',
+        color: '#FFFFFF',
+        backgroundColor: '#222222',
+        padding: { x: 18, y: 8 }
+      }).setOrigin(0.5).setInteractive();
+
+      diffButton.on('pointerdown', () => {
+        useGameState.getState().setDifficulty(diff.key);
+        diffButton.setStyle({ backgroundColor: '#00FFFF', color: '#222222' });
+      });
+      diffButton.on('pointerover', () => {
+        diffButton.setStyle({ backgroundColor: '#444444' });
+      });
+      diffButton.on('pointerout', () => {
+        diffButton.setStyle({ backgroundColor: '#222222' });
+      });
+    });
   }
 }

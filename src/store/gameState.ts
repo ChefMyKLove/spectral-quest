@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import type { Difficulty } from '../config/gameConfig';
 
 interface Chronicle {
   layer: number;
@@ -20,6 +21,7 @@ interface GameState {
   // Progression
   chronicles: Chronicle[];
   selectedSkin: string;
+  difficulty: Difficulty;
   
   // Actions
   setLayer: (layer: number) => void;
@@ -32,6 +34,7 @@ interface GameState {
   resetTimer: () => void;
   addChronicle: (chronicle: Chronicle) => void;
   resetForNewLayer: () => void;
+  setDifficulty: (difficulty: Difficulty) => void;
 }
 
 export const useGameState = create<GameState>((set) => ({
@@ -43,6 +46,7 @@ export const useGameState = create<GameState>((set) => ({
   dronesDestroyed: 0,
   chronicles: [],
   selectedSkin: 'rainbow-activist',
+  difficulty: 'weaver',
   
   // Actions
   setLayer: (layer) => set({ currentLayer: layer }),
@@ -81,5 +85,6 @@ export const useGameState = create<GameState>((set) => ({
     timer: 180,
     dronesDestroyed: 0,
     currentLayer: state.currentLayer + 1
-  }))
+  })),
+  setDifficulty: (difficulty: Difficulty) => set({ difficulty })
 }));

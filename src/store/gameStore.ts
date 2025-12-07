@@ -6,7 +6,7 @@
  */
 
 import { createStore } from 'zustand/vanilla';
-import { GAME, LEVELS, DIFFICULTIES, RARITY_ORDER } from '../config/gameConfig';
+import { GAME, LEVELS, DIFFICULTIES, RARITY_ORDER, BOSS_ROUND, BOSS_RARITY, getCurrentSeason } from '../config/gameConfig';
 import type { Difficulty, CardRarity } from '../config/gameConfig';
 
 // =============================================================================
@@ -87,6 +87,17 @@ export interface LevelStats {
   
   // Rarity
   finalRarity: CardRarity;
+}
+
+export interface BossStats {
+  damageDealt: number;
+  damageTaken: number;
+  timeRemaining: number;
+  mechanicsCompleted: number;
+  outcome: 'win' | 'lose';
+  phasesReached?: number;
+  motesLost?: number;
+  livesRemaining?: number;
 }
 
 export interface GameState {
@@ -201,6 +212,15 @@ export interface GameState {
   
   // Level completion
   completeLevel: (outcome: GameOutcome, deathType?: DeathType) => LevelStats;
+  
+  // Boss round completion
+  completeBossRound: (stats: BossStats, difficultyMultiplier?: number) => {
+    type: 'boss';
+    rarity: CardRarity;
+    stats: BossStats;
+    seasonId: number;
+    recursiveBase: string;  // Changed to string
+  };
   
   // Helpers
   getCurrentLevelConfig: () => typeof LEVELS[0];
@@ -719,7 +739,7 @@ export const gameStore = createStore<GameState>()((set, get) => ({
         }
         
         // Apply boost (but don't exceed ultimate unless it's prismatic)
-        if (rarityBoost > 0 && finalRarity !== 'ultimate' && finalRarity !== 'prismatic_ultimate') {
+        if (rarityBoost > 0 && RARITY_ORDER.indexOf(finalRarity) < RARITY_ORDER.indexOf('ultimate')) {
           const currentIndex = RARITY_ORDER.indexOf(finalRarity);
           const boostedIndex = Math.min(
             currentIndex + Math.floor(rarityBoost),
@@ -810,6 +830,57 @@ export const gameStore = createStore<GameState>()((set, get) => ({
     }
     
     return levelStats;
+  },
+  
+  completeBossRound: (stats, difficultyMultiplier = 1) => {
+    const { damageDealt, damageTaken, timeRemaining, mechanicsCompleted, outcome } = stats;
+    const totalTime = BOSS_ROUND.baseTime * difficultyMultiplier;
+    const timeRatio = timeRemaining / totalTime;
+
+    let bossRarity: CardRarity = 'common';
+
+    if (outcome === 'win') {
+      // Check for Prismatic Ultimate
+      if (
+        damageDealt >= BOSS_RARITY.PRISMATIC_ULTIMATE.damageDealt &&
+        damageTaken === 0 &&
+        timeRatio >= BOSS_RARITY.PRISMATIC_ULTIMATE.timeRatio &&
+        mechanicsCompleted >= BOSS_RARITY.PRISMATIC_ULTIMATE.mechanicsCompleted
+      ) {
+        bossRarity = 'prismatic_ultimate';
+      } else if (damageTaken === 0) {
+        bossRarity = 'ultimate';
+      } else if (timeRatio > 0.6) {
+        bossRarity = 'mythic';
+      } else if (mechanicsCompleted >= 2) {
+        bossRarity = 'legendary';
+      } else {
+        bossRarity = 'epic';
+      }
+    } else if (outcome === 'lose') {
+      // Check for Defiant Ultimate
+      if (
+        damageDealt >= BOSS_RARITY.DEFIANT_ULTIMATE.damageDealt &&
+        stats.phasesReached === 3 &&
+        stats.motesLost === 0
+      ) {
+        bossRarity = 'defiant_ultimate';
+      } else if (damageDealt >= 200) {
+        bossRarity = 'rare';
+      } else if (damageDealt >= 100) {
+        bossRarity = 'uncommon';
+      }
+    }
+
+    // Generate boss card with season-specific inscription
+    const season = getCurrentSeason();
+    return {
+      type: 'boss',
+      rarity: bossRarity,
+      stats,
+      seasonId: season.id,
+      recursiveBase: season.baseInscriptionId // string type
+    };
   },
   
   getCurrentLevelConfig: () => {

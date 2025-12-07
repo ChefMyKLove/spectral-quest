@@ -259,7 +259,9 @@ export class MainMenu extends Phaser.Scene {
     const difficultyButtons = document.querySelectorAll('.difficulty-btn');
     difficultyButtons.forEach((button) => {
       button.addEventListener('click', (e) => {
-        const target = e.target as HTMLElement;
+        // Use currentTarget to get the button element, not the clicked child element
+        // currentTarget always refers to the element the listener is attached to
+        const target = e.currentTarget as HTMLElement;
         const difficulty = target.getAttribute('data-difficulty') || 'weaver';
         
         // Remove active class from all buttons

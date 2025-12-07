@@ -233,3 +233,72 @@ export const RARITY_COLORS: Record<CardRarity, string> = {
   defiant_ultimate: '#1F2937'
 };
 
+// =============================================================================
+// SEASON CONFIGURATIONS
+// =============================================================================
+
+export interface SeasonConfig {
+  id: number;
+  name: string;
+  baseInscriptionId: string;  // Recursive reference for this season's palette
+  startDate: Date;
+  endDate: Date;
+  theme: string;
+}
+
+export const SEASONS: SeasonConfig[] = [
+  {
+    id: 1,
+    name: 'Spectral Dawn',
+    baseInscriptionId: '', // Add actual inscription ID
+    startDate: new Date('2025-12-01'),
+    endDate: new Date('2026-02-28'),
+    theme: 'ethereal'
+  },
+  // Add more seasons as needed
+];
+
+export const getCurrentSeason = (): SeasonConfig => {
+  const now = new Date();
+  const currentSeason = SEASONS.find(
+    s => now >= s.startDate && now <= s.endDate
+  );
+  return currentSeason || SEASONS[0];
+};
+
+// =============================================================================
+// BOSS ROUND CONFIGURATION
+// =============================================================================
+
+export interface BossConfig {
+  name: string;
+  phases: number;
+  healthPerPhase: number;
+  baseTime: number;
+  mechanicsRequired: string[];
+}
+
+export const BOSS_ROUND: BossConfig = {
+  name: 'Prismatic Sentinel',
+  phases: 3,
+  healthPerPhase: 100,
+  baseTime: 300, // 5 minutes
+  mechanicsRequired: ['phase_transition', 'dodge_pattern', 'energy_management']
+};
+
+// Boss rarity thresholds
+export const BOSS_RARITY = {
+  PRISMATIC_ULTIMATE: {
+    damageDealt: 300,        // Full boss health
+    damageTaken: 0,          // Perfect dodge
+    timeRatio: 0.5,          // Defeat in 50% of time
+    mechanicsCompleted: 3    // All mechanics perfect
+  },
+  DEFIANT_ULTIMATE: {
+    damageDealt: 225,        // 75% boss health
+    phasesReached: 3,        // All phases
+    motesLost: 0,            // No motes dropped
+    livesRemaining: 0        // Heroic loss
+  }
+};
+

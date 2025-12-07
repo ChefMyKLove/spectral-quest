@@ -341,6 +341,7 @@ export class HostileDrone extends BaseDrone {
   private attackCooldown: number = 0;
   private stolenMotes: number = 0;
   private maxStolenMotes: number = 3;
+  private stolenMoteIds: number[] = []; // Track IDs of motes this drone stole
   
   constructor(scene: Phaser.Scene, x: number, y: number) {
     super(scene, x, y, 'drone_hostile');
@@ -436,6 +437,9 @@ export class HostileDrone extends BaseDrone {
       const droppedMoteIds = store.dropMotes(motesToSteal);
       this.stolenMotes = Math.min(this.maxStolenMotes, this.stolenMotes + motesToSteal);
       
+      // Track the stolen mote IDs for when drone is destroyed
+      this.stolenMoteIds.push(...droppedMoteIds);
+      
       // Emit event to respawn dropped motes immediately with their IDs
       this.scene.events.emit('droneDroppedMotes', {
         x: this.x,
@@ -444,7 +448,7 @@ export class HostileDrone extends BaseDrone {
         moteIds: droppedMoteIds
       });
       
-      console.log(`[HostileDrone] Stole ${motesToSteal} motes, respawning at (${this.x}, ${this.y})`);
+      console.log(`[HostileDrone] Stole ${motesToSteal} motes (IDs: [${droppedMoteIds.join(', ')}]), respawning at (${this.x}, ${this.y})`);
     }
     
     // Visual attack effect
@@ -487,15 +491,25 @@ export class HostileDrone extends BaseDrone {
     }
     
     // Drop stolen motes as collectible items
-    // When drone is destroyed, we need to find which motes it stole
-    // For now, just emit with count - the handler will find recently dropped motes
-    this.scene.events.emit('droneDroppedMotes', {
-      x: this.x,
-      y: this.y,
-      count: this.stolenMotes
-    });
-    
-    console.log(`[HostileDrone] Destroyed, dropping ${this.stolenMotes} stolen motes at (${this.x}, ${this.y})`);
+    // Use the tracked mote IDs to ensure we respawn the correct motes
+    if (this.stolenMoteIds.length > 0) {
+      this.scene.events.emit('droneDroppedMotes', {
+        x: this.x,
+        y: this.y,
+        count: this.stolenMoteIds.length,
+        moteIds: [...this.stolenMoteIds] // Pass a copy of the array
+      });
+      
+      console.log(`[HostileDrone] Destroyed, dropping ${this.stolenMoteIds.length} stolen motes (IDs: [${this.stolenMoteIds.join(', ')}]) at (${this.x}, ${this.y})`);
+    } else if (this.stolenMotes > 0) {
+      // Fallback: if we have count but no IDs (shouldn't happen, but safety check)
+      console.warn(`[HostileDrone] Destroyed with ${this.stolenMotes} stolen motes but no IDs tracked`);
+      this.scene.events.emit('droneDroppedMotes', {
+        x: this.x,
+        y: this.y,
+        count: this.stolenMotes
+      });
+    }
     
     this.destroy();
   }
