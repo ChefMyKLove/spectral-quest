@@ -8,8 +8,6 @@ import Phaser from 'phaser';
 import { useGameStore } from '../store/gameStore';
 import { GAME, DIFFICULTIES, LEVELS } from '../config/gameConfig';
 import type { Difficulty } from '../config/gameConfig';
-// import { initializeWallet, getWallet, resetWallet } from '../systems/bsv/walletAdapter';
-// import { BSV_CONFIG } from '../systems/bsv/config';
 
 export class MainMenu extends Phaser.Scene {
   private selectedDifficulty: Difficulty = 'weaver';
@@ -17,6 +15,9 @@ export class MainMenu extends Phaser.Scene {
   private bubbles: Phaser.GameObjects.Arc[] = [];
   private walletStatusText?: Phaser.GameObjects.Text;
   private walletConnected: boolean = false;
+  
+  // Rainbow animation background
+  private rainbowBg?: Phaser.GameObjects.Rectangle;
   
   constructor() {
     super('MainMenu');
@@ -44,12 +45,13 @@ export class MainMenu extends Phaser.Scene {
   async create(): Promise<void> {
     const centerX = GAME.ARENA_WIDTH / 2;
     
-    // WALLET DISABLED - was causing black screen crash
-    // this.initializeBSVWallet();
+    // Create rainbow cycling background FIRST (behind everything)
+    this.createRainbowBackground();
     
     this.createCyclingBackground();
     this.createBubbles();
     
+    // Title with rainbow color animation
     const title = this.add.text(centerX, 70, 'SPECTRAL QUEST', {
       fontSize: '44px',
       fontFamily: 'Arial Rounded MT Bold, Helvetica, Arial, sans-serif',
@@ -59,6 +61,7 @@ export class MainMenu extends Phaser.Scene {
     });
     title.setOrigin(0.5);
     
+    // Rainbow color cycle on title (fast cycle - 3 seconds)
     this.tweens.addCounter({
       from: 0,
       to: 360,
@@ -66,22 +69,48 @@ export class MainMenu extends Phaser.Scene {
       repeat: -1,
       onUpdate: (tween) => {
         const hue = tween.getValue();
-        const color = Phaser.Display.Color.HSLToColor(hue / 360, 0.7, 0.8);
-        title.setTint(color.color);
+        const color = Phaser.Display.Color.HSLToColor(hue / 360, 0.8, 0.6);
+        title.setColor('#' + color.color.toString(16).padStart(6, '0'));
       }
     });
     
-    this.add.text(centerX, 120, '✨ Rainbow Craft ✨', {
+    // Subtitle with rainbow animation (slower - 5 seconds)
+    const subtitle = this.add.text(centerX, 120, '✨ Rainbow Craft ✨', {
       fontSize: '22px',
       fontFamily: 'Arial, sans-serif',
       color: '#bbaadd',
       fontStyle: 'italic'
     }).setOrigin(0.5);
     
-    this.add.text(centerX, 175, 'Choose Your Challenge', {
+    this.tweens.addCounter({
+      from: 0,
+      to: 360,
+      duration: 5000,
+      repeat: -1,
+      onUpdate: (tween) => {
+        const hue = tween.getValue();
+        const color = Phaser.Display.Color.HSLToColor(hue / 360, 0.6, 0.7);
+        subtitle.setColor('#' + color.color.toString(16).padStart(6, '0'));
+      }
+    });
+    
+    // "Choose Your Challenge" with rainbow animation (medium - 4 seconds)
+    const challengeText = this.add.text(centerX, 175, 'Choose Your Challenge', {
       fontSize: '16px',
       color: '#8888aa'
     }).setOrigin(0.5);
+    
+    this.tweens.addCounter({
+      from: 0,
+      to: 360,
+      duration: 4000,
+      repeat: -1,
+      onUpdate: (tween) => {
+        const hue = tween.getValue();
+        const color = Phaser.Display.Color.HSLToColor(hue / 360, 0.5, 0.65);
+        challengeText.setColor('#' + color.color.toString(16).padStart(6, '0'));
+      }
+    });
     
     const difficulties: Difficulty[] = ['dreamer', 'weaver', 'dancer', 'master'];
     const buttonWidth = 160;
@@ -103,21 +132,23 @@ export class MainMenu extends Phaser.Scene {
     controlsBg.fillStyle(0x000000, 0.3);
     controlsBg.fillRoundedRect(centerX - 200, 470, 400, 35, 17);
     
-    this.add.text(centerX, 487, 'WASD: Move  •  Space: Shoot  •  Mouse: Aim', {
+    // Instructions with rainbow animation (slow - 6 seconds)
+    const instructions = this.add.text(centerX, 487, 'WASD: Move  •  Space: Shoot  •  Mouse: Aim', {
       fontSize: '13px',
       color: '#aaaacc'
     }).setOrigin(0.5);
     
-    // Wallet button disabled
-    // const walletButton = this.createPillButton(centerX, 540, '🔗 Connect Wallet', 0x3366aa);
-    // walletButton.on('pointerdown', async () => {
-    //   await this.handleWalletConnection();
-    // });
-    
-    // this.walletStatusText = this.add.text(centerX, 580, '🔗 Wallet: Not Connected', {
-    //   fontSize: '12px',
-    //   color: '#ff8888'
-    // }).setOrigin(0.5);
+    this.tweens.addCounter({
+      from: 0,
+      to: 360,
+      duration: 6000,
+      repeat: -1,
+      onUpdate: (tween) => {
+        const hue = tween.getValue();
+        const color = Phaser.Display.Color.HSLToColor(hue / 360, 0.4, 0.7);
+        instructions.setColor('#' + color.color.toString(16).padStart(6, '0'));
+      }
+    });
     
     this.add.text(GAME.ARENA_WIDTH - 15, GAME.VIEWPORT_HEIGHT - 15, 'v0.1.0', {
       fontSize: '11px',
@@ -131,6 +162,37 @@ export class MainMenu extends Phaser.Scene {
       const testMode = this.children.getByName('testModeContainer');
       if (testMode) {
         testMode.setVisible(!testMode.visible);
+      }
+    });
+  }
+  
+  /**
+   * Create rainbow cycling background (different speed from images)
+   * Cycles slowly through rainbow spectrum
+   */
+  private createRainbowBackground(): void {
+    // Create a full-screen rectangle that cycles through rainbow colors
+    this.rainbowBg = this.add.rectangle(
+      GAME.ARENA_WIDTH / 2,
+      GAME.VIEWPORT_HEIGHT / 2,
+      GAME.ARENA_WIDTH,
+      GAME.VIEWPORT_HEIGHT,
+      0x1a0a2a,
+      1
+    );
+    this.rainbowBg.setDepth(-200); // Behind everything
+    
+    // Slow rainbow cycle (10 seconds for full spectrum)
+    this.tweens.addCounter({
+      from: 0,
+      to: 360,
+      duration: 10000,
+      repeat: -1,
+      onUpdate: (tween) => {
+        const hue = tween.getValue();
+        // Dark, saturated colors for background
+        const color = Phaser.Display.Color.HSLToColor(hue / 360, 0.7, 0.15);
+        this.rainbowBg?.setFillStyle(color.color, 1);
       }
     });
   }
@@ -250,7 +312,7 @@ export class MainMenu extends Phaser.Scene {
     );
     this.setImageToCoverViewport(this.backgroundImage, GAME.ARENA_WIDTH, GAME.VIEWPORT_HEIGHT);
     this.backgroundImage.setDepth(-100);
-    this.backgroundImage.setAlpha(1);
+    this.backgroundImage.setAlpha(0.3); // Semi-transparent to show rainbow bg
     
     const secondKey = this.backgroundImageKeys[1];
     this.backgroundImageNext = this.add.image(
@@ -293,7 +355,7 @@ export class MainMenu extends Phaser.Scene {
           
           this.tweens.add({
             targets: this.backgroundImageNext,
-            alpha: 1,
+            alpha: 0.3, // Semi-transparent
             duration: 2000,
             ease: 'Sine.easeInOut',
             onComplete: () => {
