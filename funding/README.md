@@ -1,1 +1,0 @@
-Directory for Spectral Quest funding/grant application documents.
